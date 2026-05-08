@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* Soft-medical design tokens. Cool teal primary + warm bronze secondary
+   accent gives "calm professionalism + human warmth" — avoids the generic
+   blue-tint stethoscope aesthetic. */
+:root {
+  --color-bg: #fafbfc;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f6f8;
+  --color-ink: #0c1a23;
+  --color-ink-2: #1f3140;
+  --color-muted: #5b6c7e;
+  --color-muted-2: #8a99a8;
+  --color-line: #e2e8ee;
+  --color-line-strong: #cdd6df;
+
+  --color-primary: #0d6e72;
+  --color-primary-hover: #0f8589;
+  --color-primary-soft: #e6f3f3;
+  --color-primary-ink: #053a3c;
+
+  --color-accent: #b56a3a; /* warm bronze, used sparingly */
+  --color-accent-soft: #f7ebe0;
+
+  --color-success: #2e8a5c;
+  --color-warn: #c97b2a;
+  --color-danger: #b8443f;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  --shadow-soft: 0 1px 2px rgb(12 26 35 / 0.04),
+    0 8px 24px rgb(12 26 35 / 0.05);
+  --shadow-lifted: 0 1px 2px rgb(12 26 35 / 0.05),
+    0 12px 36px rgb(12 26 35 / 0.08);
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-2: var(--color-surface-2);
+  --color-ink: var(--color-ink);
+  --color-ink-2: var(--color-ink-2);
+  --color-muted: var(--color-muted);
+  --color-muted-2: var(--color-muted-2);
+  --color-line: var(--color-line);
+  --color-line-strong: var(--color-line-strong);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-primary-ink: var(--color-primary-ink);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-success: var(--color-success);
+  --color-warn: var(--color-warn);
+  --color-danger: var(--color-danger);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-fraunces);
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Editorial display font for headlines. Optical-size axis enabled per heading. */
+.font-display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-feature-settings: "ss01", "ss02";
+}
+
+/* Selection in primary teal — small detail that signals attention to craft. */
+::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* Subtle decorative grid overlay used by hero. */
+.bg-grid {
+  background-image: linear-gradient(
+      to right,
+      rgb(12 26 35 / 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(12 26 35 / 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Hairline rule used as section separators. */
+.hairline {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-line-strong) 20%,
+    var(--color-line-strong) 80%,
+    transparent
+  );
+}
+
+/* Better focus rings without the default blue. */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
