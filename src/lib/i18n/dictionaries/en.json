@@ -1,0 +1,134 @@
+{
+  "brand": {
+    "name": "Lumen Hospital",
+    "tagline": "Modern hospital care, on your time."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "doctors": "Doctors",
+    "services": "Services",
+    "contact": "Contact",
+    "book": "Book a visit"
+  },
+  "common": {
+    "back": "Back",
+    "next": "Next",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading…",
+    "empty": "Nothing here yet.",
+    "select": "Select",
+    "selected": "Selected"
+  },
+  "home": {
+    "eyebrow": "Trusted care since 2009",
+    "title_lead": "Look after your",
+    "title_emph": "health",
+    "title_tail": "without the wait.",
+    "lede": "We are a small Mongolian hospital that takes time with every patient. Book your visit online and skip the queue.",
+    "cta_book": "Book a visit",
+    "cta_explore": "Our services",
+    "stats": {
+      "years": "years caring",
+      "doctors": "specialist doctors",
+      "patients": "satisfied patients",
+      "specialties": "specialties"
+    },
+    "services_title": "What we do",
+    "services_lede": "Family care, specialty diagnostics, and same-week appointments — under one roof.",
+    "doctors_title": "Our doctors",
+    "doctors_lede": "Experienced specialists who actually listen.",
+    "doctors_cta": "See all doctors →",
+    "trust_title": "Built around the patient",
+    "trust_items": [
+      { "title": "We listen first", "body": "We won't rush to a verdict. Tell us what's going on; the diagnosis comes second." },
+      { "title": "Honest pricing", "body": "Transparent fees. No surprise charges or hidden line items." },
+      { "title": "Modern diagnostics", "body": "International-standard equipment and an in-house lab." }
+    ],
+    "cta_band": {
+      "title": "Book tomorrow's visit, today.",
+      "body": "30 seconds. No phone tag. No email required.",
+      "btn": "See open times"
+    }
+  },
+  "about": {
+    "eyebrow": "About",
+    "title": "Care that treats you as a person, not a chart.",
+    "lede": "Lumen Hospital opened in 2009. From day one we have insisted on a simple idea: every patient is a person before they are a case.",
+    "section_mission": "Our mission",
+    "mission_body": "To deliver calm, attentive, world-class care to anyone who walks through our doors — without the cold corridor feeling.",
+    "section_values": "What we stand for",
+    "values": [
+      { "title": "One person at a time", "body": "We will not interrupt you mid-sentence. The conversation finishes before the chart opens." },
+      { "title": "Evidence-led", "body": "We read journals weekly. Treatment follows the data, not the year you trained." },
+      { "title": "Follow-up included", "body": "We check in after the visit. You are not on your own once the door closes." }
+    ]
+  },
+  "doctors": {
+    "title": "Our doctors",
+    "lede": "The best of every department.",
+    "filter_all": "All",
+    "years_exp": "years of experience",
+    "book_cta": "Book"
+  },
+  "services": {
+    "title": "Services",
+    "lede": "Pick a service area below and book a time directly with the right doctor."
+  },
+  "contact": {
+    "title": "Contact",
+    "lede": "Questions, ideas, or feedback — drop us a line.",
+    "address_label": "Address",
+    "address": "Bayanzurkh Tower, Floor 4, Sukhbaatar District, Khoroo 1, Ulaanbaatar, Mongolia",
+    "phone_label": "Phone",
+    "phone": "+976 7700 0909",
+    "email_label": "Email",
+    "email": "hello@lumen-clinic.mn",
+    "hours_label": "Hours",
+    "hours": "Mon–Fri: 09:00 – 19:00\nSat: 10:00 – 16:00\nSun: closed"
+  },
+  "booking": {
+    "step": "Step",
+    "of": "of",
+    "step_dept_title": "Pick a department",
+    "step_dept_lede": "Which kind of care are you looking for?",
+    "step_doctor_title": "Pick a doctor",
+    "step_doctor_lede": "We will show their open times next.",
+    "step_slot_title": "Pick a time",
+    "step_slot_lede": "All times are Ulaanbaatar local time. Once you pick, we go to the confirmation step.",
+    "step_form_title": "Who's coming in?",
+    "step_form_lede": "Just two fields — so we can reach you if anything changes.",
+    "field_name": "Full name",
+    "field_name_ph": "e.g. B. Bolormaa",
+    "field_phone": "Phone number",
+    "field_phone_ph": "+976 9999 0000",
+    "field_phone_hint": "+976 followed by 8 digits",
+    "field_notes": "Anything else? (optional)",
+    "field_notes_ph": "e.g. headaches for the past 3 days",
+    "submit": "Confirm booking",
+    "submitting": "Saving…",
+    "no_slots": "No openings this week. Try next week.",
+    "success_title": "Your visit is booked.",
+    "success_lede": "We'll call the number below if anything changes. Please screenshot this page.",
+    "success_print": "Print",
+    "success_home": "Home",
+    "success_appointment_id": "Reference",
+    "errors": {
+      "slot_already_booked": "Sorry — that slot was just taken by someone else. Please pick another.",
+      "slot_in_the_past": "That time has already passed.",
+      "slot_not_found": "We couldn't find that slot.",
+      "patient_name_required": "Please enter your name.",
+      "patient_phone_required": "Please enter a phone number.",
+      "patient_phone_invalid": "Phone must be +976 followed by 8 digits.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 Lumen Hospital. All rights reserved.",
+    "links": {
+      "privacy": "Privacy",
+      "terms": "Terms"
+    }
+  }
+}
