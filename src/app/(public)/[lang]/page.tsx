@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
 import { Hero } from "@/components/marketing/Hero";
+import { StatsStrip } from "@/components/marketing/StatsStrip";
 import { ServicesGrid } from "@/components/marketing/ServicesGrid";
+import { WhyTrust } from "@/components/marketing/WhyTrust";
+import { ProcessSteps } from "@/components/marketing/ProcessSteps";
+import { CareCards } from "@/components/marketing/CareCards";
 import { DoctorsPreview } from "@/components/marketing/DoctorsPreview";
-import { TrustStrip } from "@/components/marketing/TrustStrip";
+import { Testimonials } from "@/components/marketing/Testimonials";
 import { CTABand } from "@/components/marketing/CTABand";
 
 export default async function HomePage({
@@ -18,9 +22,13 @@ export default async function HomePage({
   return (
     <>
       <Hero lang={lang} dict={dict} />
-      <TrustStrip dict={dict} />
+      <StatsStrip dict={dict} />
       <ServicesGrid lang={lang} dict={dict} />
+      <WhyTrust lang={lang} dict={dict} />
+      <ProcessSteps lang={lang} dict={dict} />
+      <CareCards dict={dict} />
       <DoctorsPreview lang={lang} dict={dict} />
+      <Testimonials dict={dict} />
       <CTABand lang={lang} dict={dict} />
     </>
   );

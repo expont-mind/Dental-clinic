@@ -1,14 +1,16 @@
 {
   "brand": {
-    "name": "Lumen Hospital",
-    "tagline": "Modern hospital care, on your time."
+    "name": "Dentaris",
+    "tagline": "Digital Dental Clinic"
   },
   "nav": {
     "home": "Home",
-    "about": "About",
-    "doctors": "Doctors",
+    "about": "About us",
+    "doctors": "Dentists",
     "services": "Services",
-    "contact": "Contact",
+    "featured": "Featured",
+    "news": "News",
+    "contact": "Contact us",
     "book": "Book a visit"
   },
   "common": {
@@ -22,24 +24,125 @@
     "selected": "Selected"
   },
   "home": {
-    "eyebrow": "Trusted care since 2009",
-    "title_lead": "Look after your",
-    "title_emph": "health",
-    "title_tail": "without the wait.",
-    "lede": "We are a small Mongolian hospital that takes time with every patient. Book your visit online and skip the queue.",
-    "cta_book": "Book a visit",
+    "eyebrow": "Modern dental care",
+    "title_lead": "Smile Beyond Modern Dentistry",
+    "title_emph": "Reflection of",
+    "title_tail": "Confidence",
+    "title_lead_mn": "Smile Beyond Modern Dentistry",
+    "title_emph_mn": "Reflection of",
+    "title_tail_mn": "Confidence",
+    "lede": "We believe a smile is more than just beauty — it represents health and self-confidence. That's why we focus on education, oral hygiene and long-lasting results.",
+    "script_accent": "Dentaris Digital Dental Clinic",
+    "hero_h1_lead": "YOUR SMILE, YOUR WELLNESS, OUR",
+    "hero_h1_emph": "PRIORITY",
+    "hero_lede": "Modern equipment. Skilled hands. Care that fits you.",
+    "hero_schedule_btn": "Schedule Appointment",
+    "hero_phone_label": "Call Us Now",
+    "hero_phone": "+976 7700 0909",
+    "cta_book": "Get Started",
     "cta_explore": "Our services",
+    "cta_demo": "Watch a Demo",
+    "rating_value": "4.9",
+    "rating_count": "12,202",
+    "rating_label": "Excellent",
+    "learners_count": "12.5K+",
+    "learners_label": "Satisfied Learners",
+    "logos_title": "Top companies trust us with their services",
     "stats": {
       "years": "years caring",
       "doctors": "specialist doctors",
       "patients": "satisfied patients",
       "specialties": "specialties"
     },
-    "services_title": "What we do",
-    "services_lede": "Family care, specialty diagnostics, and same-week appointments — under one roof.",
-    "doctors_title": "Our doctors",
-    "doctors_lede": "Experienced specialists who actually listen.",
-    "doctors_cta": "See all doctors →",
+    "services_eyebrow": "Our services",
+    "services_title": "Comprehensive Dental Services for Every Need",
+    "services_lede": "Dentaris Digital Dental Clinic is more than just a dental clinic — it is a place where healthy, confident, and radiant smiles are crafted with care, expertise, and precision. Designed with a modern approach to dentistry, our clinic combines advanced technology, gentle techniques, and personalized treatment plans to ensure that every patient enjoys a comfortable and effective dental experience.",
+    "services_cta": "Learn More",
+    "why_trust_eyebrow": "Why patients trust us",
+    "why_trust_title": "Why patients trust us with their care",
+    "why_trust_lede": "We create experiences that make you feel cared for, confident and comfortable. Our commitment to excellence, advanced technology, and personalized treatment plans set us apart.",
+    "why_trust_items": [
+      "Cosmetic dentistry, orthodontics and oral surgery.",
+      "Skilled dentists and specialists for personalized care.",
+      "Modern equipment and minimally invasive methods.",
+      "Better long-term, long-lasting results."
+    ],
+    "care_eyebrow": "Our promise",
+    "care_title": "Committed to Your Care",
+    "care_lede": "We don't just treat teeth — we build trust. Every interaction is designed to feel simple, calm and transparent.",
+    "care_cards": [
+      {
+        "title": "Insurance Support",
+        "body": "Flexible payment options compatible with private and employer insurance."
+      },
+      {
+        "title": "Expert Dentists",
+        "body": "10+ years of experience and internationally trained specialists."
+      },
+      {
+        "title": "Pain-free Experience",
+        "body": "Modern anesthesia and a calm environment — your comfort comes first."
+      }
+    ],
+    "stats_eyebrow": "By the numbers",
+    "stats_title": "Backed by trust",
+    "stats_items": [
+      { "value": "25+", "label": "years caring" },
+      { "value": "12K+", "label": "happy patients" },
+      { "value": "9+", "label": "specialist dentists" },
+      { "value": "98%", "label": "positive reviews" }
+    ],
+    "process_eyebrow": "How it works",
+    "process_title": "Book a visit in just 3 steps",
+    "process_lede": "Simple, fast, transparent. No phone tag, no email required.",
+    "process_steps": [
+      {
+        "step": "01",
+        "title": "Pick your service",
+        "body": "From family check-ups to implants — choose the area you need."
+      },
+      {
+        "step": "02",
+        "title": "Choose a doctor & time",
+        "body": "Pick from available dentists and open time slots that fit your schedule."
+      },
+      {
+        "step": "03",
+        "title": "Confirm and visit",
+        "body": "Drop your name and phone — your appointment is locked in. We send an SMS reminder."
+      }
+    ],
+    "testimonial_eyebrow": "Reviews",
+    "testimonial_title": "What patients say",
+    "testimonial_lede": "Real reactions from patients who walked through our doors.",
+    "testimonials": [
+      {
+        "quote": "I used to be terrified of the dentist. Dentaris changed that. The dentist explained every step, and the treatment was completely painless. I love smiling again.",
+        "name": "B. Enkhjargal",
+        "role": "Student"
+      },
+      {
+        "quote": "Brought my kid in — they were so warm and patient. He thought he was playing the whole time and got his check-up done. He actually wants to go back!",
+        "name": "S. Tuya",
+        "role": "Mother"
+      },
+      {
+        "quote": "Got an implant. Three months later — feels like my own tooth. Honest pricing, real care. Highly recommend.",
+        "name": "D. Batbayar",
+        "role": "Business owner"
+      }
+    ],
+    "doctors_eyebrow": "Our team",
+    "doctors_title": "Skilled Hands with Caring Hearts",
+    "doctors_lede": "Our dentists treat each patient with empathy and honesty. Their experience is the foundation of your trust.",
+    "doctors_cta": "See all dentists →",
+    "welcome_offer": {
+      "eyebrow": "For new patients",
+      "title": "New to Dentaris? Enjoy a Special Welcome Offer.",
+      "body": "Initial check-up + cleaning — 50% off. Book your visit online and meet your new dentist with peace of mind.",
+      "btn": "Book a visit",
+      "note": "New patients only. Valid through December 2026."
+    },
     "trust_title": "Built around the patient",
     "trust_items": [
       { "title": "We listen first", "body": "We won't rush to a verdict. Tell us what's going on; the diagnosis comes second." },
@@ -53,44 +156,133 @@
     }
   },
   "about": {
-    "eyebrow": "About",
-    "title": "Care that treats you as a person, not a chart.",
-    "lede": "Lumen Hospital opened in 2009. From day one we have insisted on a simple idea: every patient is a person before they are a case.",
+    "eyebrow": "About us",
+    "script_accent": "Digital Dental Clinic",
+    "title": "Modern technology, real human care",
+    "lede": "Dentaris Digital Dental Clinic opened in 2009 in the heart of Ulaanbaatar. From day one we have insisted on a simple idea: every patient is a person before they are a case.",
+    "stats": [
+      { "value": "25+", "label": "years caring" },
+      { "value": "12K+", "label": "happy patients" },
+      { "value": "9+", "label": "specialist dentists" },
+      { "value": "5", "label": "service areas" }
+    ],
     "section_mission": "Our mission",
-    "mission_body": "To deliver calm, attentive, world-class care to anyone who walks through our doors — without the cold corridor feeling.",
+    "mission_body": "To deliver calm, attentive, world-class dental care to anyone who walks through our doors — without the cold corridor feeling.",
+    "featured_eyebrow": "Featured",
+    "featured_title": "Current promotions & special offers",
+    "featured_lede": "Limited-time offers running this month. Book now to lock in your discount.",
+    "featured_items": [
+      {
+        "image": "/ontsloh1.png",
+        "title": "Featured 1",
+        "body": "Current limited-time offer."
+      },
+      {
+        "image": "/ontsloh2.png",
+        "title": "Featured 2",
+        "body": "Current limited-time offer."
+      },
+      {
+        "image": "/ontsloh3.png",
+        "title": "Featured 3",
+        "body": "Current limited-time offer."
+      }
+    ],
     "section_values": "What we stand for",
     "values": [
       { "title": "One person at a time", "body": "We will not interrupt you mid-sentence. The conversation finishes before the chart opens." },
       { "title": "Evidence-led", "body": "We read journals weekly. Treatment follows the data, not the year you trained." },
       { "title": "Follow-up included", "body": "We check in after the visit. You are not on your own once the door closes." }
+    ],
+    "timeline_title": "Our story",
+    "timeline": [
+      { "year": "2009", "title": "Founded", "body": "Started as a small clinic with one treatment room." },
+      { "year": "2014", "title": "New location", "body": "Opened our flagship in Sukhbaatar district." },
+      { "year": "2019", "title": "Digital transformation", "body": "3D scanners and digital smile design rolled out." },
+      { "year": "2024", "title": "12,000+ patients", "body": "Highest-rated dental clinic in independent surveys." }
     ]
   },
   "doctors": {
-    "title": "Our doctors",
+    "title": "Our dentists",
     "lede": "The best of every department.",
     "filter_all": "All",
     "years_exp": "years of experience",
-    "book_cta": "Book"
+    "book_cta": "Book",
+    "book_with_doctor": "Book with this dentist",
+    "profession_label": "Profession",
+    "rank_label": "Rank",
+    "direction_label": "Focus area",
+    "default_rank": "Doctor of Medicine",
+    "bio_fallback": "An experienced dentist who works one-on-one with each patient on a personalized treatment plan."
   },
   "services": {
-    "title": "Services",
-    "lede": "Pick a service area below and book a time directly with the right doctor."
+    "title": "Our dental services",
+    "lede": "From routine family check-ups to cosmetic and implant work — every dental service under one roof.",
+    "see_more": "Learn more",
+    "starting_from_label": "Price",
+    "duration_label": "Duration",
+    "treatments_title": "Treatments included",
+    "pricing_title": "Price list",
+    "benefits_title": "Why we're different",
+    "faq_title": "Frequently asked questions",
+    "book_cta": "Book this service",
+    "back_to_services": "← All services"
   },
   "contact": {
-    "title": "Contact",
-    "lede": "Questions, ideas, or feedback — drop us a line.",
+    "title": "Contact us",
+    "script_accent": "We'd love to meet you",
+    "lede": "Questions, ideas, or feedback — drop us a line. Bookings, general queries — we get back fast.",
     "address_label": "Address",
-    "address": "Bayanzurkh Tower, Floor 4, Sukhbaatar District, Khoroo 1, Ulaanbaatar, Mongolia",
+    "address": "Branch №1: Bayanzurkh Tower, Floor 4, Sukhbaatar District, Khoroo 1\nBranch №2: West of the Central Post Office, Khoroo 4, Chingeltei District",
+    "address1": "Branch №1 — Bayanzurkh Tower, Floor 4, Sukhbaatar District, Khoroo 1",
+    "address2": "Branch №2 — West of the Central Post Office, Khoroo 4, Chingeltei District",
     "phone_label": "Phone",
     "phone": "+976 7700 0909",
     "email_label": "Email",
-    "email": "hello@lumen-clinic.mn",
+    "email": "hello@dentaris.mn",
     "hours_label": "Hours",
-    "hours": "Mon–Fri: 09:00 – 19:00\nSat: 10:00 – 16:00\nSun: closed"
+    "hours": "Mon–Fri: 09:00 – 19:00\nSat: 10:00 – 16:00\nSun: closed",
+    "locations_eyebrow": "Our branches",
+    "locations_title": "Choose between our two branches",
+    "locations_lede": "Two locations in the city centre — parking available, comfortable spaces.",
+    "branch1_name": "Main center — Bayanzurkh Tower",
+    "branch1_addr": "Sukhbaatar District, Khoroo 1, Bayanzurkh Tower, Floor 4",
+    "branch2_name": "Modern treatment rooms",
+    "branch2_addr": "Latest equipment, comfortable consultation lounges",
+    "form_eyebrow": "Feedback",
+    "form_title": "Share your feedback",
+    "form_lede": "Tell us about your experience, suggestions or concerns. We read every message and reply.",
+    "form_name": "Full name",
+    "form_phone": "Phone",
+    "form_message": "Your feedback",
+    "form_submit": "Send",
+    "form_submitting": "Sending…",
+    "success_title": "Your message was sent.",
+    "success_lede": "We'll reply as soon as we can. Thank you!",
+    "errors": {
+      "message_required": "Please enter your message.",
+      "phone_invalid": "Phone number is invalid (+976 + 8 digits).",
+      "not_configured": "Service is not configured. Please contact admin.",
+      "table_missing": "Feedback table is not set up yet.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "directions": "Get directions",
+    "open_now": "Open now"
   },
   "booking": {
     "step": "Step",
     "of": "of",
+    "book_eyebrow": "Dental clinic online booking",
+    "book_title": "Pick a dental service and lock in your time",
+    "book_lede": "Choose from 9 dental service areas at Dentaris Dental Clinic. Booking takes under 60 seconds — no phone tag, no email required.",
+    "book_features": [
+      { "title": "Fast", "body": "Under 60s" },
+      { "title": "No phone tag", "body": "All online" },
+      { "title": "SMS reminder", "body": "Before visit" }
+    ],
+    "book_help_eyebrow": "Need help",
+    "book_help_title": "Not sure which dental service to pick?",
+    "book_help_body": "Our dentists will guide you to the right service based on your situation and book your visit.",
     "step_dept_title": "Pick a department",
     "step_dept_lede": "Which kind of care are you looking for?",
     "step_doctor_title": "Pick a doctor",
@@ -124,8 +316,50 @@
       "unknown": "Something went wrong. Please try again."
     }
   },
+  "auth": {
+    "login": "Sign in",
+    "signup": "Sign up",
+    "login_title": "Welcome back",
+    "login_lede": "Sign in to manage your appointments and details.",
+    "signup_title": "Create an account",
+    "signup_lede": "Create an account to book and track your visits online.",
+    "email": "Email",
+    "email_ph": "name@email.com",
+    "password": "Password",
+    "password_ph": "At least 6 characters",
+    "name": "Full name",
+    "name_ph": "e.g. B. Bolormaa",
+    "phone": "Phone",
+    "phone_ph": "+976 9999 0000",
+    "submit_login": "Sign in",
+    "submit_signup": "Create account",
+    "loading": "Loading…",
+    "or_continue": "or",
+    "google": "Continue with Google",
+    "have_account": "Already have an account?",
+    "no_account": "New here?",
+    "go_login": "Sign in",
+    "go_signup": "Sign up",
+    "logout": "Sign out",
+    "forgot": "Forgot password?",
+    "success_signup": "Account created. Please check your email to verify.",
+    "field_required": "Please fill in all fields.",
+    "password_short": "Password must be at least 6 characters."
+  },
   "footer": {
-    "copyright": "© 2026 Lumen Hospital. All rights reserved.",
+    "copyright": "© 2026 Dentaris Digital Dental Clinic. All rights reserved.",
+    "intro": "A modern dental clinic powered by digital technology. Comfortable, attentive care for everyone.",
+    "company_label": "Services",
+    "newsletter_label": "Get the latest information",
+    "newsletter_placeholder": "Email address",
+    "newsletter_submit": "Subscribe",
+    "marquee_items": [
+      "General Dentistry",
+      "Cosmetic Dentistry",
+      "Orthodontics",
+      "Pediatric Dentistry",
+      "Implant & Restorative"
+    ],
     "links": {
       "privacy": "Privacy",
       "terms": "Terms"

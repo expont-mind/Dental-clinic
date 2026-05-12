@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Fraunces } from "next/font/google";
+import { Manrope, Fraunces, Allura } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../../globals.css";
 import { getDictionary, hasLocale, LOCALES } from "@/lib/i18n/dictionaries";
@@ -9,24 +9,31 @@ import { Footer } from "@/components/layout/Footer";
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
-  subsets: ["latin", "cyrillic"],
+  subsets: ["latin"],
   axes: ["opsz", "SOFT"],
+  display: "swap",
+});
+
+const allura = Allura({
+  variable: "--font-allura",
+  subsets: ["latin"],
+  weight: ["400"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Lumen Эмнэлэг — Lumen Hospital",
-    template: "%s · Lumen",
+    default: "Dentaris Digital Dental Clinic",
+    template: "%s · Dentaris",
   },
   description:
-    "Орчин үеийн эмнэлгийн үйлчилгээ, онлайн цаг захиалга. Modern hospital care, online booking.",
+    "Modern dental care center — cosmetic dentistry, orthodontics and oral surgery. Online booking, gentle techniques and personalized treatment plans.",
 };
 
 export async function generateStaticParams() {
@@ -47,7 +54,7 @@ export default async function RootLayout({
   return (
     <html
       lang={lang}
-      className={`${manrope.variable} ${fraunces.variable} antialiased`}
+      className={`${manrope.variable} ${fraunces.variable} ${allura.variable} antialiased`}
     >
       <body className="min-h-screen flex flex-col bg-bg text-ink">
         <Header lang={lang} dict={dict} />

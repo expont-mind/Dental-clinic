@@ -66,63 +66,86 @@ export default async function BookPickSlotPage({
 
   return (
     <>
-      <StepIndicator
-        current={3}
-        stepWord={dict.booking.step}
-        ofWord={dict.booking.of}
-        labels={[
-          dict.nav.services,
-          dict.nav.doctors,
-          dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
-          dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
-        ]}
-      />
-      <div className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
-        <Link
-          href={`/${lang}/book/${deptSlug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink"
-        >
-          ← {dict.common.back}
-        </Link>
+      {/* Hero + step bar — unified block */}
+      <section className="relative overflow-hidden bg-primary-soft">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/40 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl"
+        />
 
-        <div className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
-          <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-surface-2">
+        <StepIndicator
+          variant="onSoft"
+          current={3}
+          stepWord={dict.booking.step}
+          ofWord={dict.booking.of}
+          labels={[
+            dict.nav.services,
+            dict.nav.doctors,
+            dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
+            dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
+          ]}
+        />
+
+        <div className="relative mx-auto max-w-3xl px-5 pt-10 pb-14 text-center sm:px-8 sm:pt-12 sm:pb-16">
+          <Link
+            href={`/${lang}/book/${deptSlug}`}
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:text-ink"
+          >
+            ← {dict.common.back}
+          </Link>
+          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+            ◦ {deptName}
+          </p>
+          <h1 className="mt-2 text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
+            {dict.booking.step_slot_title}
+          </h1>
+          <p className="mx-auto mt-4 max-w-md text-[14px] leading-7 text-muted sm:text-[15px]">
+            {dict.booking.step_slot_lede}
+          </p>
+        </div>
+      </section>
+
+      {/* Doctor summary + slot picker */}
+      <section className="mx-auto max-w-4xl px-5 pb-20 pt-10 sm:px-8 sm:pb-28 sm:pt-12">
+        <div className="flex items-center gap-4 rounded-[20px] bg-surface p-4 ring-1 ring-line shadow-[0_8px_20px_-12px_rgba(26,132,120,0.18)]">
+          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-primary-soft">
             {doctor.photo_url ? (
               <Image
                 src={doctor.photo_url}
                 alt={name}
                 fill
-                sizes="56px"
+                sizes="64px"
                 className="object-cover"
               />
-            ) : null}
+            ) : (
+              <div className="flex h-full items-center justify-center font-display text-2xl text-muted-2">
+                {name.charAt(0)}
+              </div>
+            )}
           </div>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
               {deptName}
             </p>
-            <p className="truncate font-display text-lg font-medium leading-tight">
+            <p className="font-display mt-0.5 truncate text-[18px] font-bold leading-tight text-ink">
               {name}
             </p>
-            <p className="truncate text-xs text-muted">{title}</p>
+            {title && (
+              <p className="mt-0.5 truncate text-[12px] text-muted">{title}</p>
+            )}
           </div>
         </div>
-
-        <header className="mt-10">
-          <h1 className="font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
-            {dict.booking.step_slot_title}
-          </h1>
-          <p className="mt-3 text-base text-muted">
-            {dict.booking.step_slot_lede}
-          </p>
-        </header>
 
         <SlotPicker
           days={days}
           confirmHrefPrefix={`/${lang}/book/${deptSlug}/${doctorId}/confirm`}
           emptyLabel={dict.booking.no_slots}
         />
-      </div>
+      </section>
     </>
   );
 }

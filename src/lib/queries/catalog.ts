@@ -29,7 +29,17 @@ export async function listDepartments(): Promise<Department[]> {
     .select("*")
     .order("sort_order", { ascending: true });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).filter(isDentalDepartment);
+}
+
+function isDentalDepartment(d: Pick<Department, "slug" | "name_mn" | "name_en">): boolean {
+  const slug = d.slug?.toLowerCase();
+  if (slug && DENTAL_DEPT_SLUGS.has(slug)) return true;
+  const haystack = [d.name_mn, d.name_en]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return DENTAL_KEYWORDS.some((k) => haystack.includes(k));
 }
 
 export async function getDepartmentBySlug(
@@ -48,6 +58,79 @@ export async function getDepartmentBySlug(
   return data;
 }
 
+/**
+ * Override doctor photo_url with local /p1..p6.jpg, cycling by index so all
+ * six images are used when there are six or more doctors. List ordering is
+ * deterministic (sort_order from DB), so each doctor keeps a stable photo.
+ */
+function withLocalPhotos<T extends { photo_url: string | null }>(
+  docs: T[],
+): T[] {
+  return docs.map((d, i) => ({
+    ...d,
+    photo_url: `/p${(i % 6) + 1}.jpg`,
+  }));
+}
+
+/**
+ * Dental-only filter. The Supabase database may still contain legacy
+ * general-hospital department rows (Дотрын/Зүрх судас/Арьс гэх мэт);
+ * only doctors whose department slug matches one of these dental slugs
+ * are surfaced on the public site.
+ */
+const DENTAL_DEPT_SLUGS = new Set([
+  "general",
+  "cosmetic",
+  "orthodontics",
+  "pediatric",
+  "restorative",
+  "hygiene",
+  "endodontics",
+  "prosthodontics",
+  "oral-surgery",
+  "dental",
+]);
+
+const DENTAL_KEYWORDS = [
+  // Mongolian
+  "шүд",
+  "шүдн",
+  "ерөнхий эмч",
+  "гажиг засал",
+  "имплант",
+  "ортодонт",
+  "эрүүл ахуй",
+  "сувгийн",
+  "согог засал",
+  "мэс заслын эмч",
+  "hollywood smile",
+  // English
+  "dental",
+  "dentist",
+  "implant",
+  "ortho",
+  "hygienist",
+  "endodont",
+  "prosthod",
+  "oral surg",
+];
+
+function isDentalDoctor(d: DoctorWithDepartment): boolean {
+  const slug = d.department?.slug?.toLowerCase();
+  if (slug && DENTAL_DEPT_SLUGS.has(slug)) return true;
+  // Fallback — check title / department name for dental keywords
+  const haystack = [
+    d.department?.name_mn,
+    d.department?.name_en,
+    d.title_mn,
+    d.title_en,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return DENTAL_KEYWORDS.some((k) => haystack.includes(k));
+}
+
 export async function listDoctors(opts?: {
   departmentSlug?: string;
 }): Promise<DoctorWithDepartment[]> {
@@ -56,7 +139,8 @@ export async function listDoctors(opts?: {
     if (opts?.departmentSlug) {
       docs = docs.filter((d) => d.department.slug === opts.departmentSlug);
     }
-    return docs.sort((a, b) => a.sort_order - b.sort_order);
+    docs = docs.filter(isDentalDoctor);
+    return withLocalPhotos(docs.sort((a, b) => a.sort_order - b.sort_order));
   }
   const supabase = await createSupabaseServer();
   let query = supabase
@@ -73,7 +157,10 @@ export async function listDoctors(opts?: {
   }
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as unknown as DoctorWithDepartment[];
+  const docs = ((data ?? []) as unknown as DoctorWithDepartment[]).filter(
+    isDentalDoctor,
+  );
+  return withLocalPhotos(docs);
 }
 
 export async function listDoctorsPreview(
@@ -86,21 +173,10 @@ export async function listDoctorsPreview(
 export async function getDoctorBySlug(
   slug: string,
 ): Promise<DoctorWithDepartment | null> {
-  if (!isSupabaseConfigured()) {
-    return (
-      fallbackDoctorsWithDepartment().find((d) => d.slug === slug) ?? null
-    );
-  }
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("doctors")
-    .select(
-      "*, department:departments!doctors_department_id_fkey(id,slug,name_mn,name_en)",
-    )
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw error;
-  return data as unknown as DoctorWithDepartment | null;
+  // Resolve the index of this doctor in the full list so the photo cycle
+  // stays stable when navigating between list and detail pages.
+  const all = await listDoctors();
+  return all.find((d) => d.slug === slug) ?? null;
 }
 
 export async function getDoctorById(

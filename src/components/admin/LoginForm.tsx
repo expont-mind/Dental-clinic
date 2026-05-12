@@ -3,7 +3,6 @@
 import { useActionState } from "react";
 import { adminSignInAction, type AdminAuthState } from "@/lib/actions/admin";
 import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
 
 const initial: AdminAuthState = {};
 
@@ -26,13 +25,20 @@ export function LoginForm() {
         required
       />
       {state.error && (
-        <p className="rounded-xl border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">
+        <p className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-[13px] leading-6 text-danger">
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={pending}>
+      <button
+        type="submit"
+        disabled={pending}
+        className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+      >
         {pending ? "Нэвтэрч байна…" : "Нэвтрэх"}
-      </Button>
+        <span className="transition-transform group-hover:translate-x-0.5">
+          →
+        </span>
+      </button>
     </form>
   );
 }

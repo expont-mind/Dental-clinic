@@ -14,29 +14,29 @@ export async function DoctorsPreview({
   if (doctors.length === 0) return null;
 
   return (
-    <section className="border-y border-line bg-surface">
-      <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
+    <section>
+      <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
-              ◦ {dict.nav.doctors}
+            <p className="font-script text-[34px] leading-none text-primary sm:text-[42px]">
+              {dict.home.doctors_eyebrow}
             </p>
-            <h2 className="font-display mt-3 text-3xl font-medium leading-tight tracking-tight sm:text-5xl">
+            <h2 className="mt-3 text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
               {dict.home.doctors_title}
             </h2>
-            <p className="mt-4 text-base leading-7 text-muted sm:text-lg">
+            <p className="mt-5 max-w-md text-[15px] leading-7 text-muted">
               {dict.home.doctors_lede}
             </p>
           </div>
           <Link
             href={`/${lang}/doctors`}
-            className="text-sm font-medium text-primary hover:text-primary-hover"
+            className="text-[14px] font-semibold text-primary-ink hover:text-ink"
           >
             {dict.home.doctors_cta}
           </Link>
         </div>
 
-        <ul className="mt-12 grid gap-6 sm:grid-cols-3">
+        <ul className="mt-12 grid gap-5 sm:grid-cols-3">
           {doctors.map((d) => {
             const name = lang === "mn" ? d.name_mn : d.name_en;
             const title = lang === "mn" ? d.title_mn : d.title_en;
@@ -45,7 +45,7 @@ export async function DoctorsPreview({
             return (
               <li key={d.id} className="group">
                 <Link href={`/${lang}/doctors/${d.slug}`} className="block">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-surface-2">
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-[28px] bg-surface-2">
                     {d.photo_url ? (
                       <Image
                         src={d.photo_url}
@@ -59,7 +59,7 @@ export async function DoctorsPreview({
                         {name.charAt(0)}
                       </div>
                     )}
-                    <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-ink-2 backdrop-blur">
+                    <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-2 backdrop-blur">
                       {deptName}
                     </div>
                   </div>

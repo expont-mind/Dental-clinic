@@ -1,9 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { DEV_ADMIN, isSupabaseConfigured } from "@/lib/auth";
+import { translateError } from "@/lib/utils/translate-error";
 
 export type AdminAuthState = { error?: string };
 
@@ -11,26 +13,49 @@ export async function adminSignInAction(
   _prev: AdminAuthState,
   formData: FormData,
 ): Promise<AdminAuthState> {
+  const email = String(formData.get("email") || "").trim();
+  const password = String(formData.get("password") || "");
+  if (!email || !password) return { error: "Имэйл, нууц үг шаардлагатай." };
+
+  // 1. Dev bypass — accept temporary credentials and skip Supabase
+  if (
+    email.toLowerCase() === DEV_ADMIN.email.toLowerCase() &&
+    password === DEV_ADMIN.password
+  ) {
+    const jar = await cookies();
+    jar.set(DEV_ADMIN.cookieName, "1", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+    redirect("/admin");
+  }
+
+  // 2. Real Supabase auth
   if (!isSupabaseConfigured()) {
     return {
       error:
         "Supabase холбогдоогүй байна. .env.local дотроо NEXT_PUBLIC_SUPABASE_URL/ANON_KEY нэмнэ үү.",
     };
   }
-  const email = String(formData.get("email") || "").trim();
-  const password = String(formData.get("password") || "");
-  if (!email || !password) return { error: "Имэйл, нууц үг шаардлагатай." };
 
   const supabase = await createSupabaseServer();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  if (error) return { error: translateError(error) };
 
   redirect("/admin");
 }
 
 export async function adminSignOutAction() {
-  const supabase = await createSupabaseServer();
-  await supabase.auth.signOut();
+  const jar = await cookies();
+  jar.delete(DEV_ADMIN.cookieName);
+  try {
+    const supabase = await createSupabaseServer();
+    await supabase.auth.signOut();
+  } catch {
+    // ignore — dev bypass doesn't need Supabase session
+  }
   redirect("/admin/login");
 }
 
@@ -41,7 +66,10 @@ export async function generateSlotsAction(
   formData: FormData,
 ): Promise<SlotGenState> {
   if (!isSupabaseConfigured()) {
-    return { error: "Supabase холбогдоогүй байна." };
+    return {
+      error:
+        "Supabase холбогдоогүй байна. Цаг үүсгэхийн тулд Supabase тохиргоо хэрэгтэй.",
+    };
   }
   const doctor_id = String(formData.get("doctor_id") || "");
   const from_date = String(formData.get("from_date") || "");
@@ -65,7 +93,7 @@ export async function generateSlotsAction(
     p_minutes: minutes,
     p_skip_weekend: skip_weekend,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: translateError(error) };
   revalidatePath("/admin/slots");
   return { ok: true, inserted: typeof data === "number" ? data : 0 };
 }
