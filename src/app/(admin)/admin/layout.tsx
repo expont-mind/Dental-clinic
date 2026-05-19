@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { DEV_ADMIN } from "@/lib/auth";
 import { AdminSidebarLink } from "@/components/admin/AdminSidebarLink";
+import { Toaster } from "sonner";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -53,6 +54,21 @@ const NAV = [
     label: "Манай хамт олон",
     icon: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M18 3.1a4 4 0 0 1 0 7.8",
   },
+  {
+    href: "/admin/services",
+    label: "Үйлчилгээ",
+    icon: "M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  },
+  {
+    href: "/admin/branches",
+    label: "Салбарууд",
+    icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  },
+  {
+    href: "/admin/clinic",
+    label: "Эмнэлгийн профайл",
+    icon: "M3 21h18M5 21V7l7-4 7 4v14M9 21V12h6v9M9 9h.01M15 9h.01",
+  },
 ];
 
 export default async function AdminLayout({
@@ -85,6 +101,7 @@ export default async function AdminLayout({
   return (
     <html lang="mn" className={`${manrope.variable} ${fraunces.variable} antialiased`}>
       <body className="min-h-screen bg-[#f3f4f6] text-ink font-sans">
+        <Toaster richColors position="top-right" />
         {isLoggedIn ? (
           <div className="flex min-h-screen">
             {/* Sidebar */}

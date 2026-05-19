@@ -226,7 +226,13 @@
     "benefits_title": "Бид яагаад онцгой вэ?",
     "faq_title": "Түгээмэл асуултууд",
     "book_cta": "Энэ үйлчилгээгээр цаг авах",
-    "back_to_services": "← Бүх үйлчилгээ"
+    "back_to_services": "← Бүх үйлчилгээ",
+    "child_services_title": "Багтсан үйлчилгээнүүд",
+    "related_services_title": "Холбоотой үйлчилгээнүүд",
+    "related_doctors_title": "Манай мэргэжилтнүүд",
+    "view_details": "Дэлгэрэнгүй",
+    "services_count": "үйлчилгээ",
+    "from_price": "-аас"
   },
   "contact": {
     "title": "Холбоо барих",

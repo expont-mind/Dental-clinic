@@ -8,6 +8,8 @@ import type {
 // In-memory mirror of supabase/seed.sql so the site renders before the
 // real DB is wired up. Swapped out automatically once env vars are set.
 
+const NOW = new Date().toISOString();
+
 export const FALLBACK_DEPARTMENTS: Department[] = [
   {
     id: "dept-general",
@@ -19,8 +21,10 @@ export const FALLBACK_DEPARTMENTS: Department[] = [
     description_en:
       "Cleaning, fillings and check-ups — everyday dental care for the whole family.",
     icon_key: "tooth",
+    is_active: true,
     sort_order: 1,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "dept-cosmetic",
@@ -32,8 +36,10 @@ export const FALLBACK_DEPARTMENTS: Department[] = [
     description_en:
       "Whitening, veneers and full smile design.",
     icon_key: "sparkles",
+    is_active: true,
     sort_order: 2,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "dept-orthodontics",
@@ -45,8 +51,10 @@ export const FALLBACK_DEPARTMENTS: Department[] = [
     description_en:
       "Braces, clear aligners and bite correction.",
     icon_key: "align",
+    is_active: true,
     sort_order: 3,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "dept-pediatric",
@@ -58,8 +66,10 @@ export const FALLBACK_DEPARTMENTS: Department[] = [
     description_en:
       "Gentle, kid-friendly dental care from baby teeth onward.",
     icon_key: "baby",
+    is_active: true,
     sort_order: 4,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "dept-restorative",
@@ -71,8 +81,10 @@ export const FALLBACK_DEPARTMENTS: Department[] = [
     description_en:
       "Implants, crowns and bridges — full restorative solutions.",
     icon_key: "implant",
+    is_active: true,
     sort_order: 5,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
 ];
 
@@ -93,9 +105,11 @@ export const FALLBACK_DOCTORS: Doctor[] = [
       "Specialises in orthodontic diagnosis, monitoring and long-term treatment plans tailored to each patient's smile.",
     photo_url: "/p1.jpg",
     years_exp: 12,
+    itdoctor_dentist_id: null,
     is_active: true,
     sort_order: 1,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "doc-bayasgalan",
@@ -111,9 +125,11 @@ export const FALLBACK_DOCTORS: Doctor[] = [
       "12 years of experience in veneers, whitening and aesthetic restorations.",
     photo_url: "/p2.jpg",
     years_exp: 12,
+    itdoctor_dentist_id: null,
     is_active: true,
     sort_order: 1,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "doc-saruul",
@@ -129,9 +145,11 @@ export const FALLBACK_DOCTORS: Doctor[] = [
       "Calm, kid-friendly approach focused on building positive dental experiences.",
     photo_url: "/p3.jpg",
     years_exp: 8,
+    itdoctor_dentist_id: null,
     is_active: true,
     sort_order: 1,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "doc-tuvshintur",
@@ -147,9 +165,11 @@ export const FALLBACK_DOCTORS: Doctor[] = [
       "15 years of cleanings, fillings and preventive dental care.",
     photo_url: "/p4.jpg",
     years_exp: 15,
+    itdoctor_dentist_id: null,
     is_active: true,
     sort_order: 1,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "doc-batjargal",
@@ -165,9 +185,11 @@ export const FALLBACK_DOCTORS: Doctor[] = [
       "20 years specializing in dental implants, crowns and bridges.",
     photo_url: "/p5.jpg",
     years_exp: 20,
+    itdoctor_dentist_id: null,
     is_active: true,
     sort_order: 1,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
   {
     id: "doc-oyuntsetseg",
@@ -183,9 +205,11 @@ export const FALLBACK_DOCTORS: Doctor[] = [
       "Preventive care, professional cleanings and patient education.",
     photo_url: "/p6.jpg",
     years_exp: 7,
+    itdoctor_dentist_id: null,
     is_active: true,
     sort_order: 2,
-    created_at: new Date().toISOString(),
+    created_at: NOW,
+    updated_at: NOW,
   },
 ];
 

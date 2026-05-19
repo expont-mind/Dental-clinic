@@ -1,9 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { createBooking, getServices, ITDoctorError } from "@/lib/itdoctor/client";
 import { isValidMongolianPhone, normalizeMongolianPhone } from "@/lib/utils/phone";
 import { hasLocale } from "@/lib/i18n/dictionaries";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { quickPayService } from "@/lib/quickpay";
 
 export type BookingFormState = {
   status: "idle" | "error";
@@ -11,9 +14,18 @@ export type BookingFormState = {
   values?: { name?: string; phone?: string; notes?: string };
 };
 
-function isSupabaseConfigured() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return Boolean(url && !url.includes("YOUR_PROJECT_REF"));
+async function getBookingFee(): Promise<number> {
+  try {
+    const supabase = createSupabaseAdmin();
+    const { data } = await supabase
+      .from("clinic_profile")
+      .select("booking_fee_cents")
+      .eq("singleton", true)
+      .maybeSingle();
+    return data?.booking_fee_cents ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function bookSlotAction(
@@ -21,15 +33,18 @@ export async function bookSlotAction(
   formData: FormData,
 ): Promise<BookingFormState> {
   const lang = String(formData.get("lang") || "mn");
-  const slotId = String(formData.get("slot_id") || "").trim();
+  const slotDatetime = String(formData.get("slot_id") || "").trim();
   const deptSlug = String(formData.get("dept_slug") || "").trim();
   const doctorId = String(formData.get("doctor_id") || "").trim();
+  const branchId = Number(formData.get("branch_id") || "1");
+  const serviceName = String(formData.get("service_name") || "").trim();
+  const firstVisit = formData.get("first_visit") === "on";
   const name = String(formData.get("name") || "").trim();
   const phoneRaw = String(formData.get("phone") || "").trim();
-  const notes = String(formData.get("notes") || "").trim();
+  const userNotes = String(formData.get("notes") || "").trim();
 
   const language = hasLocale(lang) ? lang : "mn";
-  const values = { name, phone: phoneRaw, notes };
+  const values = { name, phone: phoneRaw, notes: userNotes };
 
   if (!name) {
     return { status: "error", errorKey: "patient_name_required", values };
@@ -41,72 +56,118 @@ export async function bookSlotAction(
     return { status: "error", errorKey: "patient_phone_invalid", values };
   }
   const phone = normalizeMongolianPhone(phoneRaw)!;
-  if (!slotId) {
+  const phone8 = phone.replace("+976", "");
+
+  if (!slotDatetime) {
     return { status: "error", errorKey: "slot_not_found", values };
   }
 
-  // Demo / fallback path — no Supabase configured yet
-  if (!isSupabaseConfigured()) {
-    const demoId = `demo-${Date.now().toString(36)}`;
-    redirect(
-      `/${language}/book/success?id=${encodeURIComponent(demoId)}` +
-        `&slot=${encodeURIComponent(slotId)}` +
-        `&dept=${encodeURIComponent(deptSlug)}` +
-        `&doctor=${encodeURIComponent(doctorId)}` +
-        `&name=${encodeURIComponent(name)}` +
-        `&phone=${encodeURIComponent(phone)}` +
-        `&demo=1`,
-    );
+  // Build structured note
+  const noteParts: string[] = [];
+  if (serviceName) noteParts.push(`Үйлчилгээ: ${serviceName}`);
+  if (firstVisit) noteParts.push("Анхны үзлэг");
+  if (userNotes) noteParts.push(userNotes);
+  const note = noteParts.join("\n") || undefined;
+
+  // Get IT Doctor service_id
+  let itServiceId = 35;
+  try {
+    const services = await getServices();
+    if (services.length > 0) itServiceId = services[0].id;
+  } catch {
+    // Use fallback
   }
 
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase.rpc("book_slot", {
-    p_time_slot_id: slotId,
-    p_patient_name: name,
-    p_patient_phone: phone,
-    p_patient_notes: notes || null,
-  });
+  const dentistId = Number(doctorId);
 
-  if (error) {
-    // Surface the real Postgres error in the dev console so we can debug
-    // without poking at the Supabase dashboard.
-    console.error("[book_slot] Supabase error:", {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
+  // Check if there's a booking fee
+  const feeCents = await getBookingFee();
+  const feeConfigured = feeCents > 0 && quickPayService.isConfigured();
+
+  if (feeConfigured) {
+    // ── Pay-first flow: create pending booking + QPay invoice ──
+    try {
+      const supabase = createSupabaseAdmin();
+      const feeMNT = feeCents / 100;
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const callbackUrl = `${appUrl}/api/qpay/callback`;
+
+      // Create QPay invoice
+      const invoice = await quickPayService.createPlatformInvoice({
+        amount: feeMNT,
+        description: `Dentaris цаг захиалга — ${serviceName || deptSlug}`,
+        callbackUrl,
+        customerName: name,
+      });
+
+      // Store pending booking
+      const { data: pending, error } = await supabase
+        .from("pending_bookings")
+        .insert({
+          invoice_id: invoice.id,
+          amount_cents: feeCents,
+          branch_id: branchId,
+          service_id: itServiceId,
+          dentist_id: dentistId > 0 ? dentistId : null,
+          slot_datetime: slotDatetime,
+          customer_name: name,
+          customer_phone: phone8,
+          service_name: serviceName || null,
+          dept_slug: deptSlug || null,
+          note: note || null,
+          lang: language,
+        })
+        .select("id")
+        .single();
+
+      if (error || !pending) {
+        console.error("[bookSlotAction] Failed to create pending booking:", error);
+        return { status: "error", errorKey: "unknown", values };
+      }
+
+      // Redirect to payment page
+      redirect(
+        `/${language}/book/payment?id=${pending.id}` +
+          `&qr=${encodeURIComponent(invoice.qr_image)}` +
+          `&amount=${feeMNT}` +
+          `&service=${encodeURIComponent(serviceName)}`,
+      );
+    } catch (e) {
+      if (isRedirectError(e)) throw e;
+      console.error("[bookSlotAction] QPay invoice error:", e);
+      return { status: "error", errorKey: "unknown", values };
+    }
+  }
+
+  // ── Free flow: create booking directly ──
+  try {
+    const result = await createBooking({
+      branch_id: branchId,
+      service_id: itServiceId,
+      dentist_id: dentistId > 0 ? dentistId : undefined,
+      date: slotDatetime.slice(0, 16),
+      customer_name: name,
+      customer_phone: phone8,
+      note,
     });
-    const haystack = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`;
-    const knownKeys = [
-      "slot_already_booked",
-      "slot_in_the_past",
-      "slot_not_found",
-      "patient_name_required",
-      "patient_phone_required",
-    ];
-    const matched = knownKeys.find((k) => haystack.includes(k));
-    return {
-      status: "error",
-      errorKey: matched ?? "unknown",
-      values,
-    };
-  }
 
-  const row = Array.isArray(data) ? data[0] : data;
-  // Function declares OUT params prefixed with `out_` to dodge name collisions
-  // with the time_slots columns inside the PL/pgSQL body.
-  const appointmentId = row?.out_appointment_id ?? row?.appointment_id;
-  if (!appointmentId) {
-    console.error("[book_slot] RPC returned no appointment_id:", { data });
-    return { status: "error", errorKey: "unknown", values };
+    redirect(
+      `/${language}/book/success?ref=${encodeURIComponent(result.booking_reference)}` +
+        `&dentist=${encodeURIComponent(result.dentist)}` +
+        `&service=${encodeURIComponent(serviceName || result.service)}` +
+        `&branch=${encodeURIComponent(result.branch)}` +
+        `&date=${encodeURIComponent(result.date)}` +
+        `&end_date=${encodeURIComponent(result.end_date)}` +
+        `&name=${encodeURIComponent(name)}` +
+        `&phone=${encodeURIComponent(phoneRaw)}`,
+    );
+  } catch (e) {
+    if (isRedirectError(e)) throw e;
+    if (e instanceof ITDoctorError) {
+      console.error("[bookSlotAction] IT Doctor error:", e.message, e.body);
+      return { status: "error", errorKey: "unknown", values };
+    }
+    throw e;
   }
-
-  redirect(
-    `/${language}/book/success?id=${encodeURIComponent(appointmentId)}` +
-      `&slot=${encodeURIComponent(slotId)}` +
-      `&dept=${encodeURIComponent(deptSlug)}` +
-      `&doctor=${encodeURIComponent(doctorId)}` +
-      `&name=${encodeURIComponent(name)}` +
-      `&phone=${encodeURIComponent(phone)}`,
-  );
 }

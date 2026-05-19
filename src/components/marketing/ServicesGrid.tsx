@@ -1,19 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
-import { listDepartments } from "@/lib/queries/catalog";
+import { listActiveServicesPublic } from "@/lib/queries/catalog";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const TOOTH =
   "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2C5.5 12 6 13.5 6.5 16c.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4 .5-2.5 1-4 1.7-5.8.5-1.2.8-2.2.8-3.2 0-2.5-2-4-4-4-1.5 0-2 .5-4 .5S9.5 3 8 3Z";
 
-const DEPT_ICONS: Record<string, string> = {
-  general: TOOTH,
-  cosmetic:
-    "M12 2l2.4 5.7L20 9l-4.3 3.7L17 18l-5-3-5 3 1.3-5.3L4 9l5.6-1.3z",
-  orthodontics: "M4 8h16M4 16h16M8 4v16M16 4v16",
-  pediatric:
-    "M12 12c2.5 0 4-2 4-4.5S14.5 3 12 3 8 5 8 7.5 9.5 12 12 12Zm-6 9c0-3 2.7-5 6-5s6 2 6 5",
-  restorative: "M12 2l8 4v6c0 5-3 8-8 10-5-2-8-5-8-10V6l8-4z",
+const ICON_PATHS: Record<string, string> = {
+  implant:
+    "M12 2v10M9 5h6M8 12h8l-1 8a3 3 0 0 1-3 3h-0a3 3 0 0 1-3-3l-1-8z",
+  braces: "M4 8h16v3a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4V8zM8 8v7M12 8v7M16 8v7",
+  surgery:
+    "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4M16 4l4 4-3 3-4-4z",
+  kid: "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4 .5-2.5 1-4 1.7-5.8.5-1.2.8-2.2.8-3.2 0-2.5-2-4-4-4M9 12h.01M15 12h.01",
+  routine: TOOTH,
+  hygiene: "M3 21l4-4 6-6 5 5-6 6-4 4zM13 11l4-4 3 3-4 4M14 6l4 4",
+  crown: "M3 18h18l-1.5-9-4 4-3.5-7-3.5 7-4-4z",
+  gum: "M4 12c0-4 3-7 8-7s8 3 8 7v6H4zM8 18l-1 4M16 18l1 4M12 18v4",
+  smile:
+    "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4M19 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z",
 };
 
 export async function ServicesGrid({
@@ -23,7 +28,7 @@ export async function ServicesGrid({
   lang: string;
   dict: Dictionary;
 }) {
-  const departments = await listDepartments();
+  const services = await listActiveServicesPublic();
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
@@ -42,7 +47,12 @@ export async function ServicesGrid({
               aria-label="Play overview"
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 grid h-16 w-16 place-items-center rounded-full bg-primary text-white shadow-[0_8px_30px_rgba(94,189,177,0.45)] hover:scale-105 transition-transform"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
                 <path d="M6 4l14 8-14 8V4z" />
               </svg>
             </button>
@@ -86,16 +96,16 @@ export async function ServicesGrid({
       </div>
 
       {/* Service tiles */}
-      {departments.length > 0 && (
+      {services.length > 0 && (
         <ul className="mt-16 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {departments.slice(0, 4).map((d) => {
-            const name = lang === "mn" ? d.name_mn : d.name_en;
-            const desc = lang === "mn" ? d.description_mn : d.description_en;
-            const iconPath = DEPT_ICONS[d.slug] || TOOTH;
+          {services.slice(0, 4).map((s) => {
+            const name = lang === "mn" ? s.name_mn : s.name_en;
+            const desc = lang === "mn" ? s.description_mn : s.description_en;
+            const iconPath = ICON_PATHS[s.icon_key ?? ""] || TOOTH;
             return (
-              <li key={d.id}>
+              <li key={s.id}>
                 <Link
-                  href={`/${lang}/book/${d.slug}`}
+                  href={`/${lang}/services/${s.slug}`}
                   className="group flex h-full flex-col gap-4 rounded-3xl border border-line bg-surface p-6 transition-colors hover:border-primary/40 hover:bg-primary-soft/30"
                 >
                   <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary-soft text-primary-ink">

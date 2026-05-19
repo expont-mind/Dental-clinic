@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
-// Pre-formatted on the server. The client never calls Intl APIs, so server
-// and client render the exact same strings — no hydration mismatch even when
-// the browser's ICU data differs from Node's.
 export type SlotDay = {
   key: string;            // "YYYY-MM-DD" UB-local
   weekday: string;        // e.g. "Бя", "Sat"
@@ -20,32 +17,101 @@ export type SlotDay = {
 };
 
 type Props = {
-  days: SlotDay[];
+  /** IT Doctor dentist id (number) or Supabase doctor id (string) */
+  dentistId: number;
+  branchId: number;
+  serviceName?: string;
   confirmHrefPrefix: string;
   emptyLabel: string;
+  lang: string;
 };
 
-export function SlotPicker({ days, confirmHrefPrefix, emptyLabel }: Props) {
-  const router = useRouter();
-  const [pending, setPending] = useState<string | null>(null);
-  const [activeKey, setActiveKey] = useState<string>(days[0]?.key ?? "");
-
-  if (days.length === 0) {
-    return (
-      <div className="mt-12 rounded-2xl border border-dashed border-line bg-surface/60 p-10 text-center">
-        <p className="text-muted">{emptyLabel}</p>
-      </div>
-    );
+function generateDateRange(count: number): { key: string; date: Date }[] {
+  const dates: { key: string; date: Date }[] = [];
+  const now = new Date();
+  // Start from UB time
+  const ubNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Ulaanbaatar" }),
+  );
+  for (let i = 0; i < count; i++) {
+    const d = new Date(ubNow);
+    d.setDate(d.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    dates.push({ key, date: d });
   }
+  return dates;
+}
 
-  const activeDay = days.find((d) => d.key === activeKey) ?? days[0];
+function formatWeekday(date: Date, lang: string): string {
+  return new Intl.DateTimeFormat(lang === "mn" ? "mn-MN" : "en-US", {
+    weekday: "short",
+  }).format(date);
+}
+
+function formatMonth(date: Date, lang: string): string {
+  return new Intl.DateTimeFormat(lang === "mn" ? "mn-MN" : "en-US", {
+    month: "short",
+  }).format(date);
+}
+
+function formatDay(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(date);
+}
+
+export function SlotPicker({
+  dentistId,
+  branchId,
+  serviceName,
+  confirmHrefPrefix,
+  emptyLabel,
+  lang,
+}: Props) {
+  const router = useRouter();
+  const [dates] = useState(() => generateDateRange(14));
+  const [activeKey, setActiveKey] = useState(dates[0]?.key ?? "");
+  const [slots, setSlots] = useState<
+    Array<{ start: string; end: string }>
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
+
+  const fetchSlots = useCallback(
+    async (date: string) => {
+      setLoading(true);
+      setSlots([]);
+      try {
+        const res = await fetch(
+          `/api/booking/slots?dentist_id=${dentistId}&date=${date}&branch_id=${branchId}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSlots(data.slots ?? []);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [dentistId, branchId],
+  );
+
+  useEffect(() => {
+    if (activeKey) fetchSlots(activeKey);
+  }, [activeKey, fetchSlots]);
+
+  // Format slots for display
+  const displaySlots = slots.map((s) => {
+    const time = s.start.split(" ")[1]?.slice(0, 5) ?? s.start;
+    // Encode slot info into the id for the confirm page
+    const slotId = `${s.start}`;
+    return { id: slotId, time, is_booked: false };
+  });
 
   return (
     <div className="mt-10">
       {/* Date strip */}
       <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-2 [scrollbar-width:thin]">
-        {days.map((d) => {
-          const active = d.key === activeDay.key;
+        {dates.map((d) => {
+          const active = d.key === activeKey;
           return (
             <button
               key={d.key}
@@ -64,10 +130,10 @@ export function SlotPicker({ days, confirmHrefPrefix, emptyLabel }: Props) {
                   active ? "text-white/70" : "text-muted-2",
                 )}
               >
-                {d.weekday}
+                {formatWeekday(d.date, lang)}
               </span>
               <span className="font-display text-xl font-medium leading-none">
-                {d.day}
+                {formatDay(d.date)}
               </span>
               <span
                 className={cn(
@@ -75,44 +141,61 @@ export function SlotPicker({ days, confirmHrefPrefix, emptyLabel }: Props) {
                   active ? "text-white/70" : "text-muted",
                 )}
               >
-                {d.month}
+                {formatMonth(d.date, lang)}
               </span>
             </button>
           );
         })}
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div className="mt-8 flex justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      )}
+
+      {/* No slots */}
+      {!loading && displaySlots.length === 0 && (
+        <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface/60 p-10 text-center">
+          <p className="text-muted">{emptyLabel}</p>
+        </div>
+      )}
+
       {/* Slots grid */}
-      <div className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-        {activeDay.slots.map((s) => {
-          const isPending = pending === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              disabled={s.is_booked || pending !== null}
-              onClick={() => {
-                setPending(s.id);
-                router.push(
-                  `${confirmHrefPrefix}?slot=${encodeURIComponent(s.id)}`,
-                );
-              }}
-              className={cn(
-                "h-12 rounded-xl border text-sm font-medium transition-all",
-                s.is_booked &&
-                  "cursor-not-allowed border-dashed border-line text-muted-2 line-through",
-                !s.is_booked &&
-                  !isPending &&
-                  "border-line bg-surface text-ink hover:border-primary hover:bg-primary-soft hover:text-primary-ink",
-                isPending && "border-primary bg-primary text-white",
-                pending !== null && !isPending && "opacity-40",
-              )}
-            >
-              {s.time}
-            </button>
-          );
-        })}
-      </div>
+      {!loading && displaySlots.length > 0 && (
+        <div className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+          {displaySlots.map((s) => {
+            const isPending = pending === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                disabled={s.is_booked || pending !== null}
+                onClick={() => {
+                  setPending(s.id);
+                  const svcParam = serviceName ? `&service_name=${encodeURIComponent(serviceName)}` : "";
+                  router.push(
+                    `${confirmHrefPrefix}?slot=${encodeURIComponent(s.id)}&branch_id=${branchId}${svcParam}`,
+                  );
+                }}
+                className={cn(
+                  "h-12 rounded-xl border text-sm font-medium transition-all",
+                  s.is_booked &&
+                    "cursor-not-allowed border-dashed border-line text-muted-2 line-through",
+                  !s.is_booked &&
+                    !isPending &&
+                    "border-line bg-surface text-ink hover:border-primary hover:bg-primary-soft hover:text-primary-ink",
+                  isPending && "border-primary bg-primary text-white",
+                  pending !== null && !isPending && "opacity-40",
+                )}
+              >
+                {s.time}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

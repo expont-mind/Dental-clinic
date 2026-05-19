@@ -3,11 +3,13 @@
 import { useActionState } from "react";
 import { adminSignInAction, type AdminAuthState } from "@/lib/actions/admin";
 import { Input } from "@/components/ui/Input";
+import { useFormToast } from "@/lib/hooks/use-form-toast";
 
 const initial: AdminAuthState = {};
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(adminSignInAction, initial);
+  useFormToast(state);
   return (
     <form action={action} className="grid gap-4">
       <Input
@@ -24,11 +26,6 @@ export function LoginForm() {
         autoComplete="current-password"
         required
       />
-      {state.error && (
-        <p className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-[13px] leading-6 text-danger">
-          {state.error}
-        </p>
-      )}
       <button
         type="submit"
         disabled={pending}

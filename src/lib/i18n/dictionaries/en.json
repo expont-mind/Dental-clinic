@@ -226,7 +226,13 @@
     "benefits_title": "Why we're different",
     "faq_title": "Frequently asked questions",
     "book_cta": "Book this service",
-    "back_to_services": "← All services"
+    "back_to_services": "← All services",
+    "child_services_title": "Services included",
+    "related_services_title": "Related services",
+    "related_doctors_title": "Our specialists",
+    "view_details": "View details",
+    "services_count": "services",
+    "from_price": "from"
   },
   "contact": {
     "title": "Contact us",

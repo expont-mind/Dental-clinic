@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { requireAdminUser } from "@/lib/auth";
 import { listDepartments } from "@/lib/queries/catalog";
+import { listBranchesAdmin } from "@/lib/queries/branches";
+import { listServicesAdmin } from "@/lib/queries/admin";
 import { DoctorForm } from "@/components/admin/DoctorForm";
 
 export default async function AdminTeamNewPage() {
   await requireAdminUser();
-  const departments = await listDepartments();
+  const [departments, branches, services] = await Promise.all([
+    listDepartments(),
+    listBranchesAdmin(),
+    listServicesAdmin(),
+  ]);
 
   return (
     <div>
@@ -51,7 +57,18 @@ export default async function AdminTeamNewPage() {
             <DoctorForm
               departments={departments.map((d) => ({
                 id: d.id,
-                name: d.name_mn,
+                name_mn: d.name_mn,
+                name_en: d.name_en,
+              }))}
+              branches={branches.map((b) => ({
+                id: b.id,
+                name_mn: b.name_mn,
+                name_en: b.name_en,
+              }))}
+              services={services.map((s) => ({
+                id: s.id,
+                name_mn: s.name_mn,
+                name_en: s.name_en,
               }))}
             />
           </div>

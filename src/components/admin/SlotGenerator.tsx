@@ -4,6 +4,8 @@ import { useActionState } from "react";
 import { generateSlotsAction, type SlotGenState } from "@/lib/actions/admin";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 type Props = {
   doctors: Array<{
@@ -17,6 +19,13 @@ const initial: SlotGenState = {};
 
 export function SlotGenerator({ doctors }: Props) {
   const [state, action, pending] = useActionState(generateSlotsAction, initial);
+  const prev = useRef(state);
+  useEffect(() => {
+    if (state === prev.current) return;
+    prev.current = state;
+    if (state.ok) toast.success(`Амжилттай үүсгэлээ. ${state.inserted ?? ""} мөр нэмэгдсэн.`);
+    if (state.error) toast.error(state.error);
+  }, [state]);
   const today = new Date().toISOString().slice(0, 10);
   const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -100,17 +109,6 @@ export function SlotGenerator({ doctors }: Props) {
         />
         Бямба, Ням гариг алгасах
       </label>
-
-      {state.ok && (
-        <p className="rounded-xl border border-success/30 bg-success/8 px-4 py-3 text-sm text-success">
-          Амжилттай үүсгэлээ. {state.inserted ?? "Хэдэн ч"} мөр нэмэгдсэн.
-        </p>
-      )}
-      {state.error && (
-        <p className="rounded-xl border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger">
-          {state.error}
-        </p>
-      )}
 
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? "Үүсгэж байна…" : "Чөлөөт цаг үүсгэх"}

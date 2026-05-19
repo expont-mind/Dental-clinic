@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
 import { Button } from "@/components/ui/Button";
-import { getDoctorById, getSlotById, getDepartmentBySlug } from "@/lib/queries/catalog";
 import { formatFull } from "@/lib/utils/datetime";
 
 export default async function BookSuccessPage({
@@ -11,13 +10,14 @@ export default async function BookSuccessPage({
 }: {
   params: Promise<{ lang: string }>;
   searchParams: Promise<{
-    id?: string;
-    slot?: string;
-    dept?: string;
-    doctor?: string;
+    ref?: string;
+    dentist?: string;
+    service?: string;
+    branch?: string;
+    date?: string;
+    end_date?: string;
     name?: string;
     phone?: string;
-    demo?: string;
   }>;
 }) {
   const { lang } = await params;
@@ -25,23 +25,9 @@ export default async function BookSuccessPage({
   const dict = await getDictionary(lang);
   const sp = await searchParams;
 
-  const [doctor, slot, dept] = await Promise.all([
-    sp.doctor ? getDoctorById(sp.doctor) : null,
-    sp.slot ? getSlotById(sp.slot) : null,
-    sp.dept ? getDepartmentBySlug(sp.dept) : null,
-  ]);
-
-  const doctorName = doctor
-    ? lang === "mn"
-      ? doctor.name_mn
-      : doctor.name_en
+  const when = sp.date
+    ? formatFull(sp.date.replace(" ", "T") + "+08:00", lang as "mn" | "en")
     : "";
-  const deptName = dept
-    ? lang === "mn"
-      ? dept.name_mn
-      : dept.name_en
-    : "";
-  const when = slot ? formatFull(slot.slot_start, lang as "mn" | "en") : "";
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8 sm:py-24">
@@ -64,22 +50,38 @@ export default async function BookSuccessPage({
           {dict.booking.success_title}
         </h1>
         <p className="mt-3 text-lg text-muted">{dict.booking.success_lede}</p>
-        {sp.demo === "1" && (
-          <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-warn/30 bg-warn/10 px-3 py-1 text-xs font-medium text-warn">
-            DEMO · Supabase ulemiis baigaa
-          </p>
-        )}
       </div>
 
       <dl className="mt-12 overflow-hidden rounded-3xl border border-line bg-surface">
-        <Row label={dict.booking.success_appointment_id} value={sp.id ?? "—"} mono />
-        {doctorName && <Row label={dict.nav.doctors} value={doctorName} />}
-        {deptName && <Row label={dict.nav.services} value={deptName} />}
-        {when && (
-          <Row label={dict.booking.step_slot_title.split(" ")[0]} value={when} />
+        <Row
+          label={dict.booking.success_appointment_id}
+          value={sp.ref ?? "—"}
+          mono
+        />
+        {sp.dentist && (
+          <Row label={dict.nav.doctors} value={sp.dentist} />
         )}
-        {sp.name && <Row label={dict.booking.field_name} value={sp.name} />}
-        {sp.phone && <Row label={dict.booking.field_phone} value={sp.phone} />}
+        {sp.service && (
+          <Row label={dict.nav.services} value={sp.service} />
+        )}
+        {sp.branch && (
+          <Row
+            label={lang === "mn" ? "Салбар" : "Branch"}
+            value={sp.branch}
+          />
+        )}
+        {when && (
+          <Row
+            label={dict.booking.step_slot_title.split(" ")[0]}
+            value={when}
+          />
+        )}
+        {sp.name && (
+          <Row label={dict.booking.field_name} value={sp.name} />
+        )}
+        {sp.phone && (
+          <Row label={dict.booking.field_phone} value={sp.phone} />
+        )}
       </dl>
 
       <div className="mt-10 flex flex-wrap justify-center gap-3">

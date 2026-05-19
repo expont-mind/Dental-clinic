@@ -14,12 +14,14 @@ type Props = {
   slotId: string;
   deptSlug: string;
   doctorId: string;
+  branchId: number;
+  serviceName: string;
   dict: Dictionary;
 };
 
 const initial: BookingFormState = { status: "idle" };
 
-export function PatientForm({ lang, slotId, deptSlug, doctorId, dict }: Props) {
+export function PatientForm({ lang, slotId, deptSlug, doctorId, branchId, serviceName, dict }: Props) {
   const [state, formAction, pending] = useActionState(
     bookSlotAction,
     initial,
@@ -38,6 +40,8 @@ export function PatientForm({ lang, slotId, deptSlug, doctorId, dict }: Props) {
       <input type="hidden" name="slot_id" value={slotId} />
       <input type="hidden" name="dept_slug" value={deptSlug} />
       <input type="hidden" name="doctor_id" value={doctorId} />
+      <input type="hidden" name="branch_id" value={branchId} />
+      <input type="hidden" name="service_name" value={serviceName} />
 
       <Input
         name="name"
@@ -57,6 +61,18 @@ export function PatientForm({ lang, slotId, deptSlug, doctorId, dict }: Props) {
         autoComplete="tel"
         required
       />
+
+      <label className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          name="first_visit"
+          className="h-4 w-4 rounded border-line text-primary focus:ring-primary"
+        />
+        <span className="text-[13px] font-semibold text-ink">
+          {lang === "mn" ? "Анхны үзлэг" : "First visit"}
+        </span>
+      </label>
+
       <Textarea
         name="notes"
         label={dict.booking.field_notes}

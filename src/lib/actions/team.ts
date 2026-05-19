@@ -1,26 +1,76 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/auth";
 import { translateError } from "@/lib/utils/translate-error";
+import { emitSync } from "@/lib/dentexgo/webhook";
 
 export type CreateDoctorState = {
   error?: string;
   values?: {
-    name?: string;
-    title?: string;
+    department_id?: string;
+    name_mn?: string;
+    name_en?: string;
+    title_mn?: string;
+    title_en?: string;
+    bio_mn?: string;
+    bio_en?: string;
     photo_url?: string;
-    phone?: string;
-    email?: string;
-    specialty?: string;
     years_exp?: string;
-    bio?: string;
-    specializations?: string;
-    education?: string;
+    is_active?: string;
   };
 };
+
+function readBranchIds(formData: FormData): string[] {
+  return formData
+    .getAll("branch_ids")
+    .map((v) => String(v).trim())
+    .filter((v) => v.length > 0);
+}
+
+function readServiceIds(formData: FormData): string[] {
+  return formData
+    .getAll("service_ids")
+    .map((v) => String(v).trim())
+    .filter((v) => v.length > 0);
+}
+
+async function setDoctorServices(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  doctorId: string,
+  serviceIds: string[],
+): Promise<string | null> {
+  const { error: delErr } = await supabase
+    .from("doctor_services")
+    .delete()
+    .eq("doctor_id", doctorId);
+  if (delErr) return translateError(delErr);
+  if (serviceIds.length === 0) return null;
+  const rows = serviceIds.map((service_id) => ({ doctor_id: doctorId, service_id }));
+  const { error: insErr } = await supabase.from("doctor_services").insert(rows);
+  if (insErr) return translateError(insErr);
+  return null;
+}
+
+async function setDoctorBranches(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  doctorId: string,
+  branchIds: string[],
+): Promise<string | null> {
+  const { error: delErr } = await supabase
+    .from("doctor_branches")
+    .delete()
+    .eq("doctor_id", doctorId);
+  if (delErr) return translateError(delErr);
+  if (branchIds.length === 0) return null;
+  const rows = branchIds.map((branch_id) => ({ doctor_id: doctorId, branch_id }));
+  const { error: insErr } = await supabase.from("doctor_branches").insert(rows);
+  if (insErr) return translateError(insErr);
+  return null;
+}
 
 function slugify(s: string): string {
   return (
@@ -38,80 +88,41 @@ export async function createDoctorAction(
   _prev: CreateDoctorState,
   formData: FormData,
 ): Promise<CreateDoctorState> {
-  const name = String(formData.get("name") || "").trim();
-  const title = String(formData.get("title") || "").trim();
-  const photo_url = String(formData.get("photo_url") || "").trim();
-  const phone = String(formData.get("phone") || "").trim();
-  const email = String(formData.get("email") || "").trim();
-  const specialty = String(formData.get("specialty") || "").trim();
-  const years_exp_str = String(formData.get("years_exp") || "").trim();
-  const bio = String(formData.get("bio") || "").trim();
-  const specializations = String(formData.get("specializations") || "").trim();
-  const education = String(formData.get("education") || "").trim();
-
-  const values = {
-    name,
-    title,
-    photo_url,
-    phone,
-    email,
-    specialty,
-    years_exp: years_exp_str,
-    bio,
-    specializations,
-    education,
+  const values: NonNullable<CreateDoctorState["values"]> = {
+    department_id: String(formData.get("department_id") || "").trim(),
+    name_mn: String(formData.get("name_mn") || "").trim(),
+    name_en: String(formData.get("name_en") || "").trim(),
+    title_mn: String(formData.get("title_mn") || "").trim(),
+    title_en: String(formData.get("title_en") || "").trim(),
+    bio_mn: String(formData.get("bio_mn") || "").trim(),
+    bio_en: String(formData.get("bio_en") || "").trim(),
+    photo_url: String(formData.get("photo_url") || "").trim(),
+    years_exp: String(formData.get("years_exp") || "").trim(),
+    is_active: formData.get("is_active") === "on" ? "on" : "",
   };
 
-  if (!name) return { error: "Нэр заавал шаардлагатай.", values };
-  if (!specialty) return { error: "Гол чиглэлээ оруулна уу.", values };
+  if (!values.department_id) return { error: "Тасгаа сонгоно уу.", values };
+  if (!values.name_mn) return { error: "Овог нэр (MN) шаардлагатай.", values };
+  if (!values.name_en)
+    return {
+      error:
+        "Овог нэрийг англиар бичих шаардлагатай. Энэ нь Dentexgo чатботод англи хэрэглэгчдэд хариулахад ашиглагдана.",
+      values,
+    };
 
   if (!isSupabaseConfigured()) {
     return {
-      error:
-        "Supabase холбогдоогүй байна. Эмчийг бүртгэхийн тулд Supabase тохиргоо хэрэгтэй.",
+      error: "Supabase холбогдоогүй байна.",
       values,
     };
   }
 
-  const supabase = await createSupabaseServer();
+  const supabase = createSupabaseAdmin();
 
-  const yearsExp = Number(years_exp_str);
+  const yearsExp = Number(values.years_exp);
   const validYears = Number.isFinite(yearsExp) && yearsExp >= 0 ? yearsExp : null;
 
-  // Find a department matching the typed specialty (case/space-insensitive),
-  // or fall back to the first available department for the FK constraint.
-  const { data: depts } = await supabase
-    .from("departments")
-    .select("id,name_mn,name_en,slug")
-    .order("sort_order", { ascending: true });
-  const specNorm = specialty.toLowerCase().replace(/\s+/g, "");
-  const matched = (depts ?? []).find((d) =>
-    [d.name_mn, d.name_en, d.slug]
-      .filter(Boolean)
-      .some((n) =>
-        String(n).toLowerCase().replace(/\s+/g, "").includes(specNorm),
-      ),
-  );
-  const department_id = matched?.id ?? depts?.[0]?.id;
-  if (!department_id) {
-    return {
-      error: "Тасгийн жагсаалт хоосон байна. Эхлээд тасаг үүсгэнэ үү.",
-      values,
-    };
-  }
-
-  // Compose Mongolian bio from optional spec/education tags so they aren't lost.
-  const extras: string[] = [];
-  if (specializations) extras.push(`Мэргэшил: ${specializations}`);
-  if (education) extras.push(`Боловсрол: ${education}`);
-  if (phone) extras.push(`Утас: ${phone}`);
-  if (email) extras.push(`И-мэйл: ${email}`);
-  const fullBio = [bio, ...extras].filter(Boolean).join("\n");
-
-  // Use typed specialty as title when no explicit title was provided.
-  const finalTitle = title || specialty;
-
-  const baseSlug = slugify(name);
+  const baseSlug = slugify(values.name_en || values.name_mn);
   let slug = baseSlug;
   for (let i = 2; i <= 9; i++) {
     const { data: existing } = await supabase
@@ -123,25 +134,94 @@ export async function createDoctorAction(
     slug = `${baseSlug}-${i}`;
   }
 
-  const { error } = await supabase.from("doctors").insert({
-    department_id,
-    slug,
-    name_mn: name,
-    name_en: name,
-    title_mn: finalTitle || null,
-    title_en: finalTitle || null,
-    bio_mn: fullBio || null,
-    bio_en: fullBio || null,
-    photo_url: photo_url || null,
-    years_exp: validYears,
-    is_active: true,
-    sort_order: 1,
-  });
+  const { data: inserted, error } = await supabase
+    .from("doctors")
+    .insert({
+      department_id: values.department_id,
+      slug,
+      name_mn: values.name_mn,
+      name_en: values.name_en,
+      title_mn: values.title_mn || null,
+      title_en: values.title_en || null,
+      bio_mn: values.bio_mn || null,
+      bio_en: values.bio_en || null,
+      photo_url: values.photo_url || null,
+      years_exp: validYears,
+      is_active: values.is_active === "on",
+      sort_order: 1,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    return { error: translateError(error), values };
+  if (error) return { error: translateError(error), values };
+
+  if (inserted?.id) {
+    const branchErr = await setDoctorBranches(
+      supabase,
+      inserted.id,
+      readBranchIds(formData),
+    );
+    if (branchErr) return { error: branchErr, values };
+    const svcErr = await setDoctorServices(
+      supabase,
+      inserted.id,
+      readServiceIds(formData),
+    );
+    if (svcErr) return { error: svcErr, values };
+    after(() => emitSync({ kind: "staff", id: inserted.id }));
   }
 
   revalidatePath("/admin/team");
   redirect("/admin/team");
+}
+
+export type UpdateDoctorState = {
+  error?: string;
+  ok?: boolean;
+};
+
+export async function updateDoctorAction(
+  _prev: UpdateDoctorState,
+  formData: FormData,
+): Promise<UpdateDoctorState> {
+  if (!isSupabaseConfigured())
+    return { error: "Supabase холбогдоогүй байна." };
+
+  const id = String(formData.get("id") || "").trim();
+  if (!id) return { error: "ID шаардлагатай." };
+
+  const yearsRaw = String(formData.get("years_exp") || "").trim();
+  const yearsExp = Number(yearsRaw);
+  const validYears = Number.isFinite(yearsExp) && yearsExp >= 0 ? yearsExp : null;
+
+  const supabase = createSupabaseAdmin();
+  const { data: updated, error } = await supabase
+    .from("doctors")
+    .update({
+      department_id: String(formData.get("department_id") || ""),
+      name_mn: String(formData.get("name_mn") || "").trim(),
+      name_en: String(formData.get("name_en") || "").trim(),
+      title_mn: String(formData.get("title_mn") || "").trim() || null,
+      title_en: String(formData.get("title_en") || "").trim() || null,
+      bio_mn: String(formData.get("bio_mn") || "").trim() || null,
+      bio_en: String(formData.get("bio_en") || "").trim() || null,
+      photo_url: String(formData.get("photo_url") || "").trim() || null,
+      years_exp: validYears,
+      is_active: formData.get("is_active") === "on",
+    })
+    .eq("id", id)
+    .select("id");
+
+  if (error) return { error: translateError(error) };
+  if (!updated || updated.length === 0)
+    return { error: "Эмч олдсонгүй." };
+
+  const branchErr = await setDoctorBranches(supabase, id, readBranchIds(formData));
+  if (branchErr) return { error: branchErr };
+  const svcErr = await setDoctorServices(supabase, id, readServiceIds(formData));
+  if (svcErr) return { error: svcErr };
+
+  after(() => emitSync({ kind: "staff", id }));
+  revalidatePath("/admin/team");
+  return { ok: true };
 }

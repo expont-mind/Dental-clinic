@@ -3,6 +3,8 @@ import type {
   Department,
   Doctor,
   DoctorWithDepartment,
+  Service,
+  ServiceWithDepartment,
   TimeSlot,
 } from "@/lib/supabase/types";
 import {
@@ -243,4 +245,113 @@ export async function getSlotById(id: string): Promise<TimeSlot | null> {
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+// ---------- Public service queries ----------
+
+/** Fetch a single service by ID (used by child pages to get parent info) */
+export async function getServiceById(id: string): Promise<Service | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data as Service | null;
+}
+
+/** Sibling services: same parent, excluding current slug */
+export async function getSiblingServices(
+  parentId: string,
+  excludeSlug: string,
+): Promise<Service[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("parent_id", parentId)
+    .neq("slug", excludeSlug)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Service[];
+}
+
+/** Top-level parent categories only (parent_id IS NULL, no IT Doctor services) */
+export async function listActiveServicesPublic(): Promise<Service[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("is_active", true)
+    .is("itdoctor_service_id", null)
+    .is("parent_id", null)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Service[];
+}
+
+/** Child services under a parent */
+export async function listChildServices(parentId: string): Promise<Service[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("parent_id", parentId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Service[];
+}
+
+export async function getServiceBySlugPublic(
+  slug: string,
+): Promise<Service | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data as Service | null;
+}
+
+export async function listDoctorsForService(
+  serviceId: string,
+): Promise<DoctorWithDepartment[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+
+  // Get doctor IDs from junction
+  const { data: junctionRows, error: jErr } = await supabase
+    .from("doctor_services")
+    .select("doctor_id")
+    .eq("service_id", serviceId);
+  if (jErr) throw jErr;
+  const doctorIds = (junctionRows ?? []).map(
+    (r) => (r as { doctor_id: string }).doctor_id,
+  );
+  if (doctorIds.length === 0) return [];
+
+  // Fetch those doctors with departments
+  const { data, error } = await supabase
+    .from("doctors")
+    .select(
+      "*, department:departments!doctors_department_id_fkey(id,slug,name_mn,name_en)",
+    )
+    .eq("is_active", true)
+    .in("id", doctorIds)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return withLocalPhotos(
+    (data ?? []) as unknown as DoctorWithDepartment[],
+  );
 }

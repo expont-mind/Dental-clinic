@@ -5,6 +5,7 @@ import "../../globals.css";
 import { getDictionary, hasLocale, LOCALES } from "@/lib/i18n/dictionaries";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { Toaster } from "sonner";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -57,6 +58,7 @@ export default async function RootLayout({
       className={`${manrope.variable} ${fraunces.variable} ${allura.variable} antialiased`}
     >
       <body className="min-h-screen flex flex-col bg-bg text-ink">
+        <Toaster richColors position="top-right" />
         <Header lang={lang} dict={dict} />
         <main className="flex-1">{children}</main>
         <Footer dict={dict} />

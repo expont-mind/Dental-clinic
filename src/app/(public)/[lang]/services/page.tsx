@@ -1,55 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
-import { SERVICE_CATALOG, type ServiceIconKey } from "@/lib/data/services";
+import {
+  listActiveServicesPublic,
+  listChildServices,
+} from "@/lib/queries/catalog";
 
-const ICONS: Record<ServiceIconKey, { tone: "primary" | "accent"; path: string }> = {
-  // Implant — screw + tooth
-  implant: {
-    tone: "primary",
-    path: "M12 2v10M9 5h6M8 12h8l-1 8a3 3 0 0 1-3 3h-0a3 3 0 0 1-3-3l-1-8z",
-  },
-  // Braces — teeth with brackets
-  braces: {
-    tone: "primary",
-    path: "M4 8h16v3a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4V8zM8 8v7M12 8v7M16 8v7",
-  },
-  // Surgery — tooth with scalpel
-  surgery: {
-    tone: "primary",
-    path: "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4M16 4l4 4-3 3-4-4z",
-  },
-  // Kid — happy tooth with cheeks
-  kid: {
-    tone: "accent",
-    path: "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4 .5-2.5 1-4 1.7-5.8.5-1.2.8-2.2.8-3.2 0-2.5-2-4-4-4M9 12h.01M15 12h.01",
-  },
-  // Routine — tooth with checkmark
-  routine: {
-    tone: "primary",
-    path: "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4M9 10l2 2 4-4",
-  },
-  // Hygiene — brush + tooth
-  hygiene: {
-    tone: "primary",
-    path: "M3 21l4-4 6-6 5 5-6 6-4 4zM13 11l4-4 3 3-4 4M14 6l4 4",
-  },
-  // Crown — crown shape
-  crown: {
-    tone: "primary",
-    path: "M3 18h18l-1.5-9-4 4-3.5-7-3.5 7-4-4z",
-  },
-  // Gum — tooth with gum line
-  gum: {
-    tone: "accent",
-    path: "M4 12c0-4 3-7 8-7s8 3 8 7v6H4zM8 18l-1 4M16 18l1 4M12 18v4",
-  },
-  // Smile — sparkle + tooth
-  smile: {
-    tone: "accent",
-    path: "M8 3c-2 0-4 1.5-4 4 0 1 .3 2 .8 3.2.7 1.8 1.2 3.3 1.7 5.8.4 2 1 4 2 4 1.2 0 1.5-2 1.7-3.5.1-1 .8-1.5 1.8-1.5s1.7.5 1.8 1.5c.2 1.5.5 3.5 1.7 3.5 1 0 1.6-2 2-4M19 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z",
-  },
-};
+const POPULAR_SLUGS = new Set(["general", "orthodontics", "implant"]);
 
 export default async function ServicesPage({
   params,
@@ -59,97 +17,148 @@ export default async function ServicesPage({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
+  const isMn = lang === "mn";
+
+  const parents = await listActiveServicesPublic();
+
+  const enriched = await Promise.all(
+    parents.map(async (p) => {
+      const children = await listChildServices(p.id);
+      const prices = children
+        .map((c) => c.price_cents)
+        .filter((v): v is number => v != null && v > 0);
+      return {
+        ...p,
+        childCount: children.length,
+        minPrice: prices.length > 0 ? Math.min(...prices) : null,
+      };
+    }),
+  );
 
   return (
     <div className="bg-bg">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-primary-soft">
+      {/* Hero — warm, inviting */}
+      <section className="relative overflow-hidden bg-[#f6f2ec]">
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-accent/40 blur-3xl"
+          className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-primary/30 blur-3xl"
+          className="pointer-events-none absolute -bottom-40 -left-32 h-80 w-80 rounded-full bg-accent/20 blur-3xl"
         />
-        <div className="relative mx-auto max-w-7xl px-5 py-20 text-center sm:px-8 sm:py-28">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
-            ◦ {dict.nav.services}
-          </p>
-          <p className="font-script mt-2 text-[34px] leading-none text-primary sm:text-[44px]">
+        <div className="relative mx-auto max-w-5xl px-5 py-20 text-center sm:px-8 sm:py-28">
+          <p className="font-script text-[32px] leading-none text-primary sm:text-[42px]">
             {dict.brand.name}
           </p>
-          <h1 className="mx-auto mt-3 max-w-3xl text-[36px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[52px]">
+          <h1 className="mx-auto mt-3 max-w-3xl text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[48px]">
             {dict.services.title}
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-7 text-muted">
+          <p className="mx-auto mt-5 max-w-lg text-[15px] leading-7 text-muted">
             {dict.services.lede}
           </p>
         </div>
       </section>
 
-      {/* 9 service catalog grid */}
-      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
-        <ul className="grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICE_CATALOG.map((s) => {
-            const title = lang === "mn" ? s.title_mn : s.title_en;
-            const desc =
-              lang === "mn" ? s.description_mn : s.description_en;
-            const { tone, path } = ICONS[s.icon];
+      {/* Service cards grid — image-forward */}
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {enriched.map((s) => {
+            const title = isMn ? s.name_mn : s.name_en;
+            const desc = isMn ? s.description_mn : s.description_en;
+            const isPopular = POPULAR_SLUGS.has(s.slug);
+            const priceLabel = s.price_text_mn
+              ? isMn
+                ? s.price_text_mn
+                : s.price_text_en
+              : s.minPrice
+                ? `${(s.minPrice / 100).toLocaleString()}₮~`
+                : null;
+            const img = s.image_url || "/p4.jpg";
+
             return (
-              <li key={s.slug}>
+              <li key={s.id}>
                 <Link
-                  href={`/${lang}/services/${s.dept_slug}`}
-                  className="group flex items-start gap-4"
+                  href={`/${lang}/services/${s.slug}`}
+                  className="group block overflow-hidden rounded-[24px] bg-surface ring-1 ring-line transition-all hover:-translate-y-1 hover:ring-primary/40 hover:shadow-[0_20px_40px_-20px_rgba(26,132,120,0.25)]"
                 >
-                  <span
-                    className={
-                      "grid h-14 w-14 shrink-0 place-items-center rounded-2xl transition-transform group-hover:-rotate-3 group-hover:scale-105 " +
-                      (tone === "accent"
-                        ? "bg-accent/25 text-accent-ink ring-1 ring-accent/40"
-                        : "bg-primary/15 text-primary ring-1 ring-primary/30")
-                    }
-                  >
-                    <svg
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d={path} />
-                    </svg>
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-[15px] font-extrabold uppercase tracking-wide text-ink group-hover:text-primary transition-colors sm:text-[16px]">
+                  {/* Image */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-primary-soft">
+                    <Image
+                      src={img}
+                      alt={title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                    />
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"
+                    />
+
+                    {/* Badges — over image */}
+                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {isPopular && (
+                          <span className="rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                            {isMn ? "Түгээмэл" : "Popular"}
+                          </span>
+                        )}
+                        {s.childCount > 0 && (
+                          <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-ink backdrop-blur">
+                            {s.childCount} {isMn ? "үйлчилгээ" : "services"}
+                          </span>
+                        )}
+                      </div>
+                      {priceLabel && (
+                        <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-white">
+                          {priceLabel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5 sm:p-6">
+                    <h2 className="font-display text-[18px] font-bold leading-tight tracking-tight text-ink group-hover:text-primary transition-colors sm:text-[20px]">
                       {title}
                     </h2>
-                    <p className="mt-2 text-[13.5px] leading-6 text-muted">
-                      {desc}
-                    </p>
+                    {desc && (
+                      <p className="mt-2 text-[13px] leading-6 text-muted line-clamp-2">
+                        {desc}
+                      </p>
+                    )}
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-primary">
+                      {dict.services.view_details}
+                      <span className="transition-transform group-hover:translate-x-1">
+                        →
+                      </span>
+                    </span>
                   </div>
                 </Link>
               </li>
             );
           })}
         </ul>
+      </section>
 
-        {/* CTA */}
-        <div className="mt-16 flex flex-col items-center justify-between gap-4 rounded-[28px] bg-primary-soft px-6 py-7 sm:flex-row sm:px-10 sm:py-8">
-          <div>
-            <p className="font-script text-[26px] leading-none text-primary sm:text-[32px]">
-              {dict.brand.name}
-            </p>
-            <p className="mt-1 font-display text-[18px] font-bold tracking-tight text-ink sm:text-[20px]">
-              {dict.home.hero_schedule_btn}
-            </p>
-          </div>
+      {/* CTA band */}
+      <section className="px-5 pb-5 sm:px-8">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-forest-grain px-8 py-12 text-center text-white sm:rounded-[40px] sm:px-12 sm:py-16">
+          <p className="font-script text-[28px] leading-none text-primary sm:text-[36px]">
+            {dict.brand.name}
+          </p>
+          <h2 className="mt-2 text-[26px] font-extrabold uppercase tracking-tight sm:text-[36px]">
+            {dict.home.hero_schedule_btn}
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-[14px] leading-6 text-white/60">
+            {isMn
+              ? "Манай мэргэжилтэн эмч нартай уулзаж, таны инээмсэглэлийг хамтдаа төлөвлөе."
+              : "Meet our specialists and plan your perfect smile together."}
+          </p>
           <Link
             href={`/${lang}/book`}
-            className="group inline-flex items-center gap-3 rounded-full bg-primary py-2 pl-6 pr-2 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
+            className="group mt-7 inline-flex items-center gap-3 rounded-full bg-primary py-2.5 pl-7 pr-3 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
           >
             {dict.nav.book}
             <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">

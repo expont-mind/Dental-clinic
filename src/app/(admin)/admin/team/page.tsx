@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdminUser, isSupabaseConfigured } from "@/lib/auth";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { listDoctors } from "@/lib/queries/catalog";
+import { SyncButton } from "@/components/admin/SyncButton";
 
 type DoctorStats = {
   appointments: number;
@@ -65,14 +66,12 @@ export default async function AdminTeamPage() {
             Эмч нар
           </h2>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[11px] font-bold text-white">
-              Жагсаалт
-            </span>
+            <SyncButton />
             <Link
               href="/admin/team/new"
-              className="text-[11px] font-bold text-[#0f172a] hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[11px] font-bold text-white hover:bg-primary-hover transition-colors"
             >
-              + Бүртгүүлэх
+              + Шинэ эмч
             </Link>
           </div>
         </div>
@@ -89,7 +88,7 @@ export default async function AdminTeamPage() {
                 key={d.id}
                 className="rounded-[14px] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(15,23,42,0.15)] ring-1 ring-line"
               >
-                {/* Photo (square) + name + role */}
+                {/* Photo + name + role */}
                 <div className="flex items-start gap-3">
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-primary-soft ring-1 ring-line">
                     {d.photo_url ? (
@@ -113,10 +112,15 @@ export default async function AdminTeamPage() {
                     <p className="mt-1 text-[11px] font-bold text-primary line-clamp-2">
                       {title || deptName}
                     </p>
+                    {!d.is_active && (
+                      <span className="mt-1 inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-400">
+                        Идэвхгүй
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Stats — appointments | revenue */}
+                {/* Stats */}
                 <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-lg bg-[#fafbff] ring-1 ring-line">
                   <div className="px-2 py-2 text-center">
                     <p className="font-display text-[14px] font-extrabold leading-none text-[#0f172a]">
@@ -147,18 +151,12 @@ export default async function AdminTeamPage() {
                   >
                     Дэлгэрэнгүй
                   </Link>
-                  <button
-                    type="button"
+                  <Link
+                    href={`/admin/team/${d.id}`}
                     className="text-[#6b7280] hover:text-[#0f172a] transition-colors"
                   >
                     Засах
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-auto text-rose-600 hover:text-rose-700 transition-colors"
-                  >
-                    Устгах
-                  </button>
+                  </Link>
                 </div>
               </li>
             );
@@ -185,8 +183,7 @@ export default async function AdminTeamPage() {
               Эмч бүртгэгдээгүй байна
             </p>
             <p className="mt-2 max-w-sm text-[13px] leading-6 text-[#6b7280]">
-              Шинэ эмч нэмж бүртгэхийн тулд &ldquo;Бүртгүүлэх&rdquo; товчийг
-              ашиглана уу.
+              IT Doctor-оос sync хийх эсвэл шинэ эмч бүртгэнэ үү.
             </p>
           </div>
         )}
