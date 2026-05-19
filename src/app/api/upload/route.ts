@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE = 2 * 1024 * 1024; // 2MB
-const BUCKET = "doctors";
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB safety net (client compresses to ~1.5MB first)
 
 export async function POST(req: NextRequest) {
+  const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const preset = process.env.CLOUDINARY_UPLOAD_PRESET;
+  const folder = process.env.CLOUDINARY_UPLOAD_FOLDER;
+
+  if (!cloud || !preset) {
+    return NextResponse.json(
+      { error: "Cloudinary is not configured." },
+      { status: 500 },
+    );
+  }
+
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
 
@@ -22,35 +31,37 @@ export async function POST(req: NextRequest) {
 
   if (file.size > MAX_SIZE) {
     return NextResponse.json(
-      { error: "File too large. Max 2MB." },
+      { error: "File too large. Max 10MB." },
       { status: 400 },
     );
   }
 
-  const ext = file.name.split(".").pop() || "jpg";
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const cloudinaryForm = new FormData();
+  cloudinaryForm.append("file", file);
+  cloudinaryForm.append("upload_preset", preset);
+  if (folder) cloudinaryForm.append("folder", folder);
 
-  const supabase = createSupabaseAdmin();
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloud}/image/upload`,
+    { method: "POST", body: cloudinaryForm },
+  );
 
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(fileName, buffer, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (error) {
-    console.error("[upload] Storage error:", error);
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("[upload] Cloudinary error:", res.status, text);
     return NextResponse.json(
-      { error: `Upload failed: ${error.message}` },
+      { error: `Upload failed (${res.status})` },
       { status: 500 },
     );
   }
 
-  const { data: urlData } = supabase.storage
-    .from(BUCKET)
-    .getPublicUrl(fileName);
+  const data = (await res.json()) as { secure_url?: string };
+  if (!data.secure_url) {
+    return NextResponse.json(
+      { error: "Cloudinary returned no URL" },
+      { status: 500 },
+    );
+  }
 
-  return NextResponse.json({ url: urlData.publicUrl });
+  return NextResponse.json({ url: data.secure_url });
 }

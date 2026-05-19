@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { Upload, X, Link as LinkIcon } from "lucide-react";
+import { compressImage } from "@/lib/compressImage";
 
 type Props = {
   name: string;
@@ -28,8 +29,18 @@ export function ImageUploadField({
     setError(null);
     setUploading(true);
     try {
+      let toUpload = file;
+      try {
+        toUpload = await compressImage(file);
+        console.log(
+          `[upload] ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(toUpload.size / 1024 / 1024).toFixed(2)}MB`,
+        );
+      } catch (err) {
+        console.error("[upload] compress failed", err);
+        toUpload = file;
+      }
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", toUpload);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (data.url) {
@@ -138,7 +149,7 @@ export function ImageUploadField({
             <p className="text-[11px] font-semibold text-rose-600">{error}</p>
           )}
           <p className="text-[10px] text-[#9ca3af]">
-            JPG / PNG / WebP, дээд тал нь 2MB
+            JPG / PNG / WebP — хэмжээг автоматаар багасгана
           </p>
         </div>
       </div>

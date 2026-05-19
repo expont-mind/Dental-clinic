@@ -13,6 +13,7 @@ import { BilingualField } from "./BilingualField";
 import { useFormToast } from "@/lib/hooks/use-form-toast";
 import { BranchPicker } from "./BranchPicker";
 import { ServicePicker } from "./ServicePicker";
+import { compressImage } from "@/lib/compressImage";
 
 type DeptOption = { id: string; name_mn: string; name_en: string };
 type BranchOption = { id: string; name_mn: string; name_en: string };
@@ -78,8 +79,17 @@ export function DoctorForm({
   async function handleFileUpload(file: File) {
     setUploading(true);
     try {
+      let toUpload = file;
+      try {
+        toUpload = await compressImage(file);
+        console.log(
+          `[upload] ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(toUpload.size / 1024 / 1024).toFixed(2)}MB`,
+        );
+      } catch (err) {
+        console.error("[upload] compress failed", err);
+      }
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", toUpload);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (data.url) {
