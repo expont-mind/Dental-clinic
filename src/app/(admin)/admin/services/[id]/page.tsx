@@ -68,6 +68,12 @@ export default async function AdminServiceEditPage({
               name_en: service.name_en,
               description_mn: service.description_mn,
               description_en: service.description_en,
+              long_description_mn: service.long_description_mn,
+              long_description_en: service.long_description_en,
+              duration_text_mn: service.duration_text_mn,
+              duration_text_en: service.duration_text_en,
+              price_text_mn: service.price_text_mn,
+              price_text_en: service.price_text_en,
               category: service.category,
               price_cents: service.price_cents,
               duration_min: service.duration_min,
@@ -77,6 +83,8 @@ export default async function AdminServiceEditPage({
               hero_image_url: service.hero_image_url ?? null,
               is_active: service.is_active,
               sort_order: service.sort_order,
+              content_mn: service.content_mn ?? null,
+              content_en: service.content_en ?? null,
             }}
           />
         </div>

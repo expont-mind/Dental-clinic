@@ -1,13 +1,18 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
 import {
   listActiveServicesPublic,
   listChildServices,
 } from "@/lib/queries/catalog";
+import {
+  ServicesBrowser,
+  type CategoryOption,
+} from "@/components/services/ServicesBrowser";
+import type { ServiceCardItem } from "@/components/services/ServiceCard";
 
-const POPULAR_SLUGS = new Set(["general", "orthodontics", "implant"]);
+const FEATURED_SLUGS = new Set(["general", "orthodontics", "implant"]);
 
 export default async function ServicesPage({
   params,
@@ -29,11 +34,43 @@ export default async function ServicesPage({
         .filter((v): v is number => v != null && v > 0);
       return {
         ...p,
-        childCount: children.length,
         minPrice: prices.length > 0 ? Math.min(...prices) : null,
       };
     }),
   );
+
+  const items: ServiceCardItem[] = enriched.map((s) => {
+    const title = isMn ? s.name_mn : s.name_en;
+    const desc = isMn ? s.description_mn : s.description_en;
+    const customPrice = isMn ? s.price_text_mn : s.price_text_en;
+    const priceLabel = customPrice
+      ? customPrice
+      : s.minPrice
+        ? `${dict.services.from_price} ${(s.minPrice / 100).toLocaleString()}₮`
+        : null;
+    return {
+      id: s.id,
+      slug: s.slug,
+      title,
+      description: desc,
+      priceLabel,
+      imageUrl: s.image_url || "/p4.jpg",
+      category: s.category,
+      isFeatured: FEATURED_SLUGS.has(s.slug),
+    };
+  });
+
+  // Distinct, sorted categories — labelled by their own value (DB stores
+  // human-readable category strings like "Cosmetic", "Orthodontics", etc.).
+  const seen = new Map<string, string>();
+  for (const it of items) {
+    if (it.category && !seen.has(it.category.toLocaleLowerCase())) {
+      seen.set(it.category.toLocaleLowerCase(), it.category);
+    }
+  }
+  const categories: CategoryOption[] = Array.from(seen.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <div className="bg-bg">
@@ -60,87 +97,21 @@ export default async function ServicesPage({
         </div>
       </section>
 
-      {/* Service cards grid — image-forward */}
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {enriched.map((s) => {
-            const title = isMn ? s.name_mn : s.name_en;
-            const desc = isMn ? s.description_mn : s.description_en;
-            const isPopular = POPULAR_SLUGS.has(s.slug);
-            const priceLabel = s.price_text_mn
-              ? isMn
-                ? s.price_text_mn
-                : s.price_text_en
-              : s.minPrice
-                ? `${(s.minPrice / 100).toLocaleString()}₮~`
-                : null;
-            const img = s.image_url || "/p4.jpg";
-
-            return (
-              <li key={s.id}>
-                <Link
-                  href={`/${lang}/services/${s.slug}`}
-                  className="group block overflow-hidden rounded-[24px] bg-surface ring-1 ring-line transition-all hover:-translate-y-1 hover:ring-primary/40 hover:shadow-[0_20px_40px_-20px_rgba(26,132,120,0.25)]"
-                >
-                  {/* Image */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-primary-soft">
-                    <Image
-                      src={img}
-                      alt={title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                    />
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"
-                    />
-
-                    {/* Badges — over image */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-                      <div className="flex flex-wrap gap-1.5">
-                        {isPopular && (
-                          <span className="rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                            {isMn ? "Түгээмэл" : "Popular"}
-                          </span>
-                        )}
-                        {s.childCount > 0 && (
-                          <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-ink backdrop-blur">
-                            {s.childCount} {isMn ? "үйлчилгээ" : "services"}
-                          </span>
-                        )}
-                      </div>
-                      {priceLabel && (
-                        <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-white">
-                          {priceLabel}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-5 sm:p-6">
-                    <h2 className="font-display text-[18px] font-bold leading-tight tracking-tight text-ink group-hover:text-primary transition-colors sm:text-[20px]">
-                      {title}
-                    </h2>
-                    {desc && (
-                      <p className="mt-2 text-[13px] leading-6 text-muted line-clamp-2">
-                        {desc}
-                      </p>
-                    )}
-                    <span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-primary">
-                      {dict.services.view_details}
-                      <span className="transition-transform group-hover:translate-x-1">
-                        →
-                      </span>
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+      {/* Filtering + grid (client) */}
+      <ServicesBrowser
+        items={items}
+        lang={lang}
+        categories={categories}
+        labels={{
+          searchPlaceholder: dict.services.search_placeholder,
+          searchClear: dict.services.search_clear,
+          filterAll: dict.services.filter_all,
+          featuredLabel: dict.services.featured_label,
+          viewDetails: dict.services.view_details,
+          emptyTitle: dict.services.empty_title,
+          emptyDescription: dict.services.empty_description,
+        }}
+      />
 
       {/* CTA band */}
       <section className="px-5 pb-5 sm:px-8">
@@ -162,15 +133,7 @@ export default async function ServicesPage({
           >
             {dict.nav.book}
             <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M7 17 17 7M9 7h8v8"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
             </span>
           </Link>
         </div>

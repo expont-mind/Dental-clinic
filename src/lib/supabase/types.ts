@@ -71,6 +71,8 @@ export type ServiceContentBlock = {
   benefits?: { title: string; body: string }[];
   faq?: { q: string; a: string }[];
   pricing?: { label: string; price: string; note?: string }[];
+  timeline?: { title: string; body: string; icon?: string }[];
+  testimonials?: { quote: string; author: string; role?: string }[];
 };
 
 export interface Service {

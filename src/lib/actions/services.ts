@@ -7,6 +7,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/auth";
 import { translateError } from "@/lib/utils/translate-error";
 import { emitSync } from "@/lib/dentexgo/webhook";
+import type { ServiceContentBlock } from "@/lib/supabase/types";
 
 export type ServiceFormState = {
   error?: string;
@@ -18,6 +19,12 @@ export type ServiceFormState = {
     name_en?: string;
     description_mn?: string;
     description_en?: string;
+    long_description_mn?: string;
+    long_description_en?: string;
+    price_text_mn?: string;
+    price_text_en?: string;
+    duration_text_mn?: string;
+    duration_text_en?: string;
     category?: string;
     price_mnt?: string;
     duration_min?: string;
@@ -27,6 +34,8 @@ export type ServiceFormState = {
     parent_id?: string;
     image_url?: string;
     hero_image_url?: string;
+    content_mn?: string;
+    content_en?: string;
   };
 };
 
@@ -83,6 +92,12 @@ function readFields(formData: FormData): NonNullable<ServiceFormState["values"]>
     name_en: String(formData.get("name_en") || "").trim(),
     description_mn: String(formData.get("description_mn") || "").trim(),
     description_en: String(formData.get("description_en") || "").trim(),
+    long_description_mn: String(formData.get("long_description_mn") || "").trim(),
+    long_description_en: String(formData.get("long_description_en") || "").trim(),
+    price_text_mn: String(formData.get("price_text_mn") || "").trim(),
+    price_text_en: String(formData.get("price_text_en") || "").trim(),
+    duration_text_mn: String(formData.get("duration_text_mn") || "").trim(),
+    duration_text_en: String(formData.get("duration_text_en") || "").trim(),
     category: String(formData.get("category") || "").trim(),
     price_mnt: String(formData.get("price_mnt") || "").trim(),
     duration_min: String(formData.get("duration_min") || "").trim(),
@@ -92,7 +107,22 @@ function readFields(formData: FormData): NonNullable<ServiceFormState["values"]>
     parent_id: String(formData.get("parent_id") || "").trim(),
     image_url: String(formData.get("image_url") || "").trim(),
     hero_image_url: String(formData.get("hero_image_url") || "").trim(),
+    content_mn: String(formData.get("content_mn") || "").trim(),
+    content_en: String(formData.get("content_en") || "").trim(),
   };
+}
+
+function parseContentJson(raw: string | undefined): ServiceContentBlock {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as ServiceContentBlock;
+    }
+    return {};
+  } catch {
+    return {};
+  }
 }
 
 function validate(
@@ -144,6 +174,12 @@ export async function createServiceAction(
       name_en: values.name_en,
       description_mn: values.description_mn || null,
       description_en: values.description_en || null,
+      long_description_mn: values.long_description_mn || null,
+      long_description_en: values.long_description_en || null,
+      price_text_mn: values.price_text_mn || null,
+      price_text_en: values.price_text_en || null,
+      duration_text_mn: values.duration_text_mn || null,
+      duration_text_en: values.duration_text_en || null,
       category: values.category || null,
       price_cents: priceCentsFromForm(values.price_mnt!),
       currency: "MNT",
@@ -151,6 +187,8 @@ export async function createServiceAction(
       itdoctor_service_id: Number.isFinite(itdoctorId) && itdoctorId > 0 ? itdoctorId : null,
       image_url: values.image_url || null,
       hero_image_url: values.hero_image_url || null,
+      content_mn: parseContentJson(values.content_mn),
+      content_en: parseContentJson(values.content_en),
       is_active: values.is_active === "on",
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
     })
@@ -203,12 +241,20 @@ export async function updateServiceAction(
       name_en: values.name_en,
       description_mn: values.description_mn || null,
       description_en: values.description_en || null,
+      long_description_mn: values.long_description_mn || null,
+      long_description_en: values.long_description_en || null,
+      price_text_mn: values.price_text_mn || null,
+      price_text_en: values.price_text_en || null,
+      duration_text_mn: values.duration_text_mn || null,
+      duration_text_en: values.duration_text_en || null,
       category: values.category || null,
       price_cents: priceCentsFromForm(values.price_mnt!),
       duration_min: Number.isFinite(duration) && duration > 0 ? duration : null,
       itdoctor_service_id: Number.isFinite(itdoctorId) && itdoctorId > 0 ? itdoctorId : null,
       image_url: values.image_url || null,
       hero_image_url: values.hero_image_url || null,
+      content_mn: parseContentJson(values.content_mn),
+      content_en: parseContentJson(values.content_en),
       is_active: values.is_active === "on",
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
     })
