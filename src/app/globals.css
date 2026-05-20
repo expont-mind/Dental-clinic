@@ -152,6 +152,30 @@ body {
   }
 }
 
+/* Two-image horizontal slide — slider container holds two images side by side.
+   First image dwells, then slides to reveal second, dwells, then slides back. */
+@keyframes slide-pair {
+  0%,
+  42% {
+    transform: translateX(0%);
+  }
+  50%,
+  92% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+.animate-slide-pair {
+  animation: slide-pair 14s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-pair {
+    animation: none !important;
+  }
+}
+
 /* Reveal-on-intersect — added by JS once visible */
 .reveal {
   opacity: 0;

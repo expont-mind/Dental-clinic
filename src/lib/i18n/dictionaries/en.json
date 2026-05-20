@@ -11,7 +11,9 @@
     "featured": "Featured",
     "news": "News",
     "contact": "Contact us",
-    "book": "Book a visit"
+    "book": "Book a visit",
+    "top_banner": "We will gift you a confident, healthy and beautiful smile.",
+    "read_more": "Read more"
   },
   "common": {
     "back": "Back",
@@ -157,49 +159,170 @@
   },
   "about": {
     "eyebrow": "About us",
-    "script_accent": "Digital Dental Clinic",
-    "title": "Modern technology, real human care",
-    "lede": "Dentaris Digital Dental Clinic opened in 2009 in the heart of Ulaanbaatar. From day one we have insisted on a simple idea: every patient is a person before they are a case.",
+    "script_accent": "since 2018",
+    "title": "Dentaris Digital Dental Clinic",
+    "lede": "Dentaris Digital Dental Clinic was founded in 2018 and operates with a team of 15 specialist doctors and 9 support staff.",
+    "lede_2": "Our clinic is built around a digital, internationally-standard workflow — modern equipment and diagnostic systems that let us deliver detailed, individualised care for every patient.",
     "stats": [
-      { "value": "25+", "label": "years caring" },
-      { "value": "12K+", "label": "happy patients" },
-      { "value": "9+", "label": "specialist dentists" },
-      { "value": "5", "label": "service areas" }
+      { "value": "2,500+", "label": "monthly patients" },
+      { "value": "15", "label": "specialist doctors" },
+      { "value": "9", "label": "support staff" },
+      { "value": "2018", "label": "founded" }
     ],
+    "vision_eyebrow": "Our vision",
+    "vision_body": "To be the lifelong gift-giver of health and beauty — crafting smiles that warm the soul, one patient at a time.",
+    "mission_eyebrow": "Our mission",
     "section_mission": "Our mission",
-    "mission_body": "To deliver calm, attentive, world-class dental care to anyone who walks through our doors — without the cold corridor feeling.",
+    "mission_body": "Raise the quality of life through world-class dental care. Deliver oral and facial expertise in a calm, safe and welcoming environment for everyone.",
+    "story_eyebrow": "Our services",
+    "story_title": "The trusted choice of 2,500+ patients every month",
+    "story_intro": "Every month, more than 2,500 patients choose the following treatments and services.",
+    "story_services": [
+      "Orthodontics",
+      "Prosthetics",
+      "Oral surgery",
+      "Preventive care",
+      "General dentistry",
+      "Pediatric dentistry",
+      "Cosmetic dentistry",
+      "Periodontics"
+    ],
+    "story_closing": "Our clinic brings advanced digital technology into dental care within strict medical standards, building trust through care that is close to every patient.",
+    "story_closing_2": "The confident, beautiful, healthy smile is the gift we want to leave with you.",
+    "values_eyebrow": "What we stand for",
+    "values": [
+      { "title": "Care for every age", "body": "From 7 to 50, from first checkup to final result — every plan is personal." },
+      { "title": "Built on digital tech", "body": "3D scanning, digital smile design, OPG, CEPHALO and CBCT imaging." },
+      { "title": "Accountable to outcomes", "body": "Follow-up checks, recall visits — we stay with you long after the chair." }
+    ],
+    "team_eyebrow": "Our team",
+    "team_title": "15 doctors · 9 staff",
+    "team_lede": "",
+    "team_breakdown": [
+      { "count": "9", "label": "Orthodontists" },
+      { "count": "4", "label": "General dentists" },
+      { "count": "1", "label": "Maxillofacial surgeon" },
+      { "count": "1", "label": "Prosthodontist / periodontist" },
+      { "count": "5", "label": "Specialist nurses" },
+      { "count": "2", "label": "Reception staff" },
+      { "count": "2", "label": "Support staff" }
+    ],
+    "services_eyebrow": "Our services",
+    "services_title": "Complete oral care — under one roof",
+    "services_lede": "",
+    "services_image_1": "/uilchilgee-1.png",
+    "services_image_2": "/uilchilgee-2.png",
+    "service_categories": [
+      {
+        "image": "/Frame 48095897.jpg",
+        "tag": "01",
+        "title": "Orthodontics",
+        "body": "Six bracket systems — a fit for every lifestyle.",
+        "items": [
+          "Metal braces",
+          "Ceramic braces",
+          "Sapphire braces",
+          "Self-ligating metal braces",
+          "Self-ligating ceramic braces",
+          "Clear aligners"
+        ]
+      },
+      {
+        "image": "/Frame 48095899.jpg",
+        "tag": "02",
+        "title": "General dentistry",
+        "body": "From prevention to cosmetic — everyday dental care.",
+        "items": [
+          "Preventive checkups",
+          "Pediatric dentistry",
+          "Adult dental treatment",
+          "Tooth whitening",
+          "Fillings & gap restoration",
+          "Dental sealants"
+        ]
+      },
+      {
+        "image": "/Frame 48095900.jpg",
+        "tag": "03",
+        "title": "Oral surgery",
+        "body": "From simple extractions to implant placement.",
+        "items": [
+          "Tooth extraction",
+          "Wisdom tooth extraction",
+          "Gingivectomy",
+          "Tongue & lip frenectomy",
+          "Splinting of injured teeth",
+          "Apicoectomy (root tip surgery)",
+          "Tooth transplantation",
+          "Dental implant placement"
+        ]
+      },
+      {
+        "image": "/Frame 48095902.jpg",
+        "tag": "04",
+        "title": "Prosthetics",
+        "body": "Zirconia, porcelain — a perfectly natural smile.",
+        "items": [
+          "Zirconia crowns",
+          "Zirconia bridges",
+          "Porcelain veneers",
+          "Hollywood smile"
+        ]
+      },
+      {
+        "image": "/Frame 48095898.jpg",
+        "tag": "05",
+        "title": "Periodontics",
+        "body": "Specialist care for healthy gums and bone.",
+        "items": [
+          "Bone smoothing and curettage for sub-gingival bone loss",
+          "Gum trimming and grafting surgery",
+          "Bone grafting for periodontal bone resorption",
+          "Gum recession reconstruction surgery",
+          "Treatment of peri-implant mucositis and peri-implantitis"
+        ]
+      }
+    ],
+    "gallery_eyebrow": "Inside the clinic",
+    "gallery_title": "Calm, modern spaces — built around you",
+    "gallery_lede": "From the lounge to every treatment room — bright, clean and welcoming.",
+    "gallery_items": [
+      { "image": "/bfgbfgbfgb.jpg", "caption": "Reception lounge" },
+      { "image": "/fbfgbfgbfg.jpg", "caption": "Treatment room I" },
+      { "image": "/fbfgbfgbfgfb.jpg", "caption": "Treatment room II" },
+      { "image": "/fnfg.jpg", "caption": "Treatment room III" }
+    ],
+    "csr_eyebrow": "Social responsibility",
+    "csr_title": "Healthy smiles for every child",
+    "csr_body": "We partner with the “Id Shidiin Oron” child protection center to run nationwide oral health programs.",
+    "csr_stat": "4,000+",
+    "csr_stat_label": "children screened and educated every year",
+    "locations_eyebrow": "Our location",
+    "locations_title": "",
+    "locations": [
+      {
+        "image": "/location2.jpg",
+        "tag": "Branch 1",
+        "name": "Central Post branch",
+        "address": "Right of the Central Post Office on Sukhbaatar Square, Express Tower red office building, 1st floor",
+        "phone": "+976 7700 0022"
+      }
+    ],
     "featured_eyebrow": "Featured",
     "featured_title": "Current promotions & special offers",
     "featured_lede": "Limited-time offers running this month. Book now to lock in your discount.",
     "featured_items": [
-      {
-        "image": "/ontsloh1.png",
-        "title": "Featured 1",
-        "body": "Current limited-time offer."
-      },
-      {
-        "image": "/ontsloh2.png",
-        "title": "Featured 2",
-        "body": "Current limited-time offer."
-      },
-      {
-        "image": "/ontsloh3.png",
-        "title": "Featured 3",
-        "body": "Current limited-time offer."
-      }
+      { "image": "/ontsloh1.png", "title": "Featured 1", "body": "Current limited-time offer." },
+      { "image": "/ontsloh2.png", "title": "Featured 2", "body": "Current limited-time offer." },
+      { "image": "/ontsloh3.png", "title": "Featured 3", "body": "Current limited-time offer." }
     ],
     "section_values": "What we stand for",
-    "values": [
-      { "title": "One person at a time", "body": "We will not interrupt you mid-sentence. The conversation finishes before the chart opens." },
-      { "title": "Evidence-led", "body": "We read journals weekly. Treatment follows the data, not the year you trained." },
-      { "title": "Follow-up included", "body": "We check in after the visit. You are not on your own once the door closes." }
-    ],
     "timeline_title": "Our story",
     "timeline": [
-      { "year": "2009", "title": "Founded", "body": "Started as a small clinic with one treatment room." },
-      { "year": "2014", "title": "New location", "body": "Opened our flagship in Sukhbaatar district." },
-      { "year": "2019", "title": "Digital transformation", "body": "3D scanners and digital smile design rolled out." },
-      { "year": "2024", "title": "12,000+ patients", "body": "Highest-rated dental clinic in independent surveys." }
+      { "year": "1993", "title": "Zonne LLC founded", "body": "Operations begin in dental treatment, surgery and prosthetics." },
+      { "year": "2018", "title": "Dentaris brand launched", "body": "A digital dental clinic that quickly became known for orthodontics." },
+      { "year": "2023", "title": "New branch, new services", "body": "Fourth branch opens with restorative and aesthetic surgery." },
+      { "year": "Today", "title": "3,200+ smiles", "body": "3,200+ patients aged 7–50 fitted with braces — 2,500+ monthly visits." }
     ]
   },
   "doctors": {

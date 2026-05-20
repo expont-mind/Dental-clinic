@@ -59,19 +59,8 @@ export function Header({ lang, dict }: Props) {
           <div className="shrink-0">
             <LangToggle current={lang} />
           </div>
-          <p className="flex-1 truncate text-center text-white/85">
-            <span className="font-semibold">Modern Care.</span>{" "}
-            <span className="hidden text-white/70 md:inline">
-              Genuine Connections.
-            </span>{" "}
-            <span className="font-semibold">Healthy Smiles for Life.</span>{" "}
-            <Link
-              href={`/${lang}/about`}
-              className="ml-1 inline-flex items-center gap-1 font-bold text-white underline underline-offset-2 hover:text-primary"
-            >
-              Read More
-              <span aria-hidden>→</span>
-            </Link>
+          <p className="flex-1 truncate text-center font-semibold text-white/85">
+            {dict.nav.top_banner}
           </p>
           <div className="flex shrink-0 items-center gap-3">
             <Link
