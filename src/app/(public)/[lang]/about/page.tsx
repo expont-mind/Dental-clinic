@@ -124,45 +124,45 @@ export default async function AboutPage({
       </section>
 
       {/* ─────────────────────────── STORY ─────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-        <div className="grid items-start gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:py-28">
+        <div className="grid items-start gap-8 sm:gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
           {/* PDF pages — button-controlled carousel between p.4 and p.5 */}
           <PdfCarousel
             slides={[
-              { src: "/uilchilgee-2.png", alt: "Dentaris үйлчилгээний дэлгэрэнгүй" },
               { src: "/uilchilgee-1.png", alt: "Dentaris үйлчилгээний танилцуулга" },
+              { src: "/uilchilgee-2.png", alt: "Dentaris үйлчилгээний дэлгэрэнгүй" },
             ]}
           />
 
           {/* Copy */}
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary sm:text-[11px]">
               ◦ {dict.about.story_eyebrow}
             </p>
-            <h2 className="mt-4 text-[26px] font-extrabold uppercase leading-tight tracking-tight text-ink sm:text-[34px]">
+            <h2 className="font-display mt-3 text-[20px] font-extrabold leading-[1.15] tracking-tight text-ink sm:mt-4 sm:text-[26px] lg:text-[34px]">
               {dict.about.story_title}
             </h2>
-            <p className="mt-6 text-[15px] leading-7 text-ink-2">
+            <p className="mt-4 text-[13.5px] leading-7 text-ink-2 sm:mt-6 sm:text-[14.5px] lg:text-[15px]">
               {dict.about.story_intro}
             </p>
-            <ul className="mt-6 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <ul className="mt-5 grid gap-x-4 gap-y-2.5 sm:mt-6 sm:gap-x-6 sm:gap-y-3 sm:grid-cols-2">
               {dict.about.story_services.map((s, i) => (
                 <li
                   key={s}
-                  className="flex items-start gap-3 text-[14.5px] leading-6 text-ink-2"
+                  className="flex items-start gap-2.5 text-[13px] leading-6 text-ink-2 sm:gap-3 sm:text-[14.5px]"
                 >
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-soft font-display text-[10px] font-bold text-primary">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary-soft font-display text-[9px] font-bold text-primary sm:h-6 sm:w-6 sm:text-[10px]">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span>{s}</span>
                 </li>
               ))}
             </ul>
-            <div className="mt-6 space-y-4">
-              <p className="text-[15px] leading-7 text-ink-2">
+            <div className="mt-5 space-y-3 sm:mt-6 sm:space-y-4">
+              <p className="text-[13.5px] leading-7 text-ink-2 sm:text-[14.5px] lg:text-[15px]">
                 {dict.about.story_closing}
               </p>
-              <p className="font-display text-[17px] leading-7 italic text-primary">
+              <p className="font-display text-[15px] leading-7 italic text-primary sm:text-[17px]">
                 {dict.about.story_closing_2}
               </p>
             </div>
@@ -173,7 +173,7 @@ export default async function AboutPage({
       {/* ─────────────────────────── TEAM ─────────────────────────── */}
       <section className="bg-forest-grain text-white">
         <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
+          <div className="grid items-center gap-8 sm:gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
             <div className="relative">
               <div className="relative overflow-hidden rounded-[28px] shadow-2xl">
                 <Image
@@ -191,10 +191,10 @@ export default async function AboutPage({
               />
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent sm:text-[11px]">
                 ◦ {dict.about.team_eyebrow}
               </p>
-              <h2 className="mt-2 text-[28px] font-extrabold uppercase leading-tight tracking-tight sm:text-[40px]">
+              <h2 className="font-display mt-2 text-[22px] font-extrabold uppercase leading-tight tracking-tight sm:text-[30px] lg:text-[40px]">
                 {dict.about.team_title}
               </h2>
 
@@ -314,29 +314,29 @@ export default async function AboutPage({
       </section>
 
       {/* ─────────────────────────── CSR ─────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-        <div className="relative overflow-hidden rounded-[36px] bg-accent-soft p-8 sm:p-12">
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:py-28">
+        <div className="relative overflow-hidden rounded-[28px] bg-accent-soft p-6 sm:rounded-[36px] sm:p-10 lg:p-12">
           <div
             aria-hidden
             className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent/40 blur-3xl"
           />
           <div className="relative grid items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent-ink">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent-ink sm:text-[11px]">
                 ◦ {dict.about.csr_eyebrow}
               </p>
-              <h2 className="mt-3 text-[26px] font-extrabold uppercase leading-tight tracking-tight text-accent-ink sm:text-[36px]">
+              <h2 className="font-display mt-2 text-[20px] font-extrabold leading-tight tracking-tight text-accent-ink sm:mt-3 sm:text-[26px] lg:text-[36px]">
                 {dict.about.csr_title}
               </h2>
-              <p className="mt-5 max-w-xl text-[15px] leading-7 text-accent-ink/85">
+              <p className="mt-4 max-w-xl text-[13.5px] leading-7 text-accent-ink/85 sm:mt-5 sm:text-[14.5px] lg:text-[15px]">
                 {dict.about.csr_body}
               </p>
             </div>
-            <div className="rounded-[28px] bg-white p-8 text-center shadow-md ring-1 ring-accent/30">
-              <p className="font-display text-[56px] font-extrabold leading-none text-accent-ink sm:text-[72px]">
+            <div className="rounded-[24px] bg-white p-6 text-center shadow-md ring-1 ring-accent/30 sm:rounded-[28px] sm:p-8">
+              <p className="font-display text-[40px] font-extrabold leading-none text-accent-ink sm:text-[56px] lg:text-[72px]">
                 {dict.about.csr_stat}
               </p>
-              <p className="mt-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-muted">
+              <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted sm:mt-3 sm:text-[12px]">
                 {dict.about.csr_stat_label}
               </p>
             </div>
@@ -345,7 +345,7 @@ export default async function AboutPage({
       </section>
 
       {/* ─────────────────────────── LOCATIONS ─────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 sm:pb-28">
+      <section className="mx-auto max-w-7xl px-5 pb-12 sm:px-8 sm:pb-20 lg:pb-28">
         <div className="text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
             ◦ {dict.about.locations_eyebrow}

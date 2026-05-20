@@ -4,6 +4,7 @@ import { requireAdminUser, isSupabaseConfigured } from "@/lib/auth";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { listDoctors } from "@/lib/queries/catalog";
 import { SyncButton } from "@/components/admin/SyncButton";
+import { DeleteDoctorButton } from "@/components/admin/DeleteDoctorButton";
 
 type DoctorStats = {
   appointments: number;
@@ -157,6 +158,7 @@ export default async function AdminTeamPage() {
                   >
                     Засах
                   </Link>
+                  <DeleteDoctorButton id={d.id} name={name} />
                 </div>
               </li>
             );

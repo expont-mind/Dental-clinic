@@ -33,7 +33,7 @@ export function Footer({
   const items = [...dict.footer.marquee_items, ...dict.footer.marquee_items];
 
   return (
-    <footer className="mt-16">
+    <footer>
       {/* Marquee strip */}
       <div className="overflow-hidden bg-primary text-primary-ink">
         <div className="flex animate-[marquee_30s_linear_infinite] whitespace-nowrap py-3">

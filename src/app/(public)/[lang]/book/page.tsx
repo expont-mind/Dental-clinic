@@ -78,11 +78,11 @@ export default async function BookStartPage({
           ]}
         />
 
-        <div className="relative mx-auto max-w-3xl px-5 pt-8 pb-10 text-center sm:px-8 sm:pt-10 sm:pb-12">
-          <h1 className="text-[28px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[36px]">
+        <div className="relative mx-auto max-w-3xl px-5 pt-6 pb-8 text-center sm:px-8 sm:pt-10 sm:pb-12">
+          <h1 className="font-display text-[22px] font-extrabold uppercase leading-[1.15] tracking-tight text-ink sm:text-[28px] lg:text-[36px]">
             {dict.booking.book_title}
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-[13px] leading-6 text-muted sm:text-[14px]">
+          <p className="mx-auto mt-2 max-w-md text-[12.5px] leading-6 text-muted sm:mt-3 sm:text-[13px] lg:text-[14px]">
             {isMn
               ? "Үйлчилгээгээ сонгоод цаг захиалаарай"
               : "Select a service to book your appointment"}
@@ -91,7 +91,7 @@ export default async function BookStartPage({
       </section>
 
       {/* Compact service list */}
-      <section className="mx-auto max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
+      <section className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-12 lg:py-14">
         {services.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-line bg-surface/60 p-10 text-center">
             <p className="text-muted">

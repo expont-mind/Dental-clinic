@@ -3,14 +3,12 @@ import Link from "next/link";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function WhyTrust({ lang, dict }: { lang: string; dict: Dictionary }) {
-  const items = dict.home.why_trust_items;
-
   return (
     <section className="border-t border-line">
-      <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-        <div className="grid gap-16 lg:grid-cols-[1fr_1.05fr] lg:gap-20">
+      <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-16 lg:py-24">
+        <div className="grid gap-10 sm:gap-14 lg:grid-cols-[1fr_1.05fr] lg:gap-20">
           {/* Left: photo collage with stamp + mint accents */}
-          <div className="relative pb-24">
+          <div className="relative mx-auto w-full max-w-[460px] pb-24">
             {/* Mint square accent — bottom-left, peeking from behind */}
             <span
               aria-hidden
@@ -25,7 +23,7 @@ export function WhyTrust({ lang, dict }: { lang: string; dict: Dictionary }) {
             {/* Big main portrait */}
             <div className="relative ml-4 aspect-[4/5] w-[78%] overflow-hidden rounded-[28px] shadow-lg sm:ml-6 sm:w-[72%]">
               <Image
-                src="/p1.jpg"
+                src="/er1.jpg"
                 alt=""
                 fill
                 sizes="(max-width: 1024px) 75vw, 360px"
@@ -36,7 +34,7 @@ export function WhyTrust({ lang, dict }: { lang: string; dict: Dictionary }) {
             {/* Small overlapping portrait — bottom-right */}
             <div className="absolute bottom-4 right-0 aspect-[4/5] w-[48%] overflow-hidden rounded-[24px] shadow-lg ring-4 ring-bg sm:bottom-6 sm:w-[46%]">
               <Image
-                src="/p3.jpg"
+                src="/er2.webp"
                 alt=""
                 fill
                 sizes="(max-width: 1024px) 50vw, 240px"
@@ -87,51 +85,32 @@ export function WhyTrust({ lang, dict }: { lang: string; dict: Dictionary }) {
                 25<span className="text-primary">+</span>
               </p>
               <p className="mt-1.5 text-[11px] font-medium tracking-wider text-muted">
-                Year Of Experiences
+                Жилийн туршлага
               </p>
             </div>
           </div>
 
           {/* Right: copy */}
           <div>
-            <p className="font-script text-[34px] leading-none text-primary sm:text-[44px]">
-              {dict.home.script_accent}
-            </p>
-            <h2 className="mt-3 text-[34px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
-              WHY{" "}
-              <span className="text-primary">{dict.brand.name}</span>{" "}
-              DENTISTRY.
+            <h2 className="font-script text-[24px] leading-tight text-primary sm:text-[32px] lg:text-[44px]">
+              {dict.home.why_trust_title}
             </h2>
-            <p className="mt-6 max-w-lg text-[14px] leading-7 text-muted sm:text-[15px]">
+            <p className="mt-5 max-w-lg text-[13.5px] leading-7 text-muted sm:mt-6 sm:text-[14px] lg:text-[15px]">
               {dict.home.why_trust_lede}
             </p>
+            {dict.home.why_trust_lede2 && (
+              <p className="mt-3 max-w-lg text-[13.5px] leading-7 text-muted sm:mt-4 sm:text-[14px] lg:text-[15px]">
+                {dict.home.why_trust_lede2}
+              </p>
+            )}
 
-            <ul className="mt-7 space-y-3.5">
-              {items.map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M5 12l5 5 9-11"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  <p className="text-[14px] leading-7 text-ink-2">{item}</p>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-9 flex flex-wrap items-center gap-5">
+            <div className="mt-6 flex flex-wrap items-center gap-4 sm:mt-9 sm:gap-5">
               <Link
                 href={`/${lang}/book`}
-                className="group inline-flex items-center gap-3 rounded-full bg-primary py-2 pl-6 pr-2 text-[13px] font-semibold text-white hover:bg-primary-hover transition-colors"
+                className="group inline-flex items-center gap-2.5 rounded-full bg-primary py-1.5 pl-5 pr-1.5 text-[12.5px] font-semibold text-white hover:bg-primary-hover transition-colors sm:gap-3 sm:py-2 sm:pl-6 sm:pr-2 sm:text-[13px]"
               >
                 {dict.home.hero_schedule_btn}
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5 sm:h-9 sm:w-9">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M7 17 17 7M9 7h8v8"
@@ -146,9 +125,9 @@ export function WhyTrust({ lang, dict }: { lang: string; dict: Dictionary }) {
 
               <a
                 href={`tel:${dict.home.hero_phone.replace(/\s/g, "")}`}
-                className="inline-flex items-center gap-3"
+                className="inline-flex items-center gap-2.5 sm:gap-3"
               >
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-ink text-white">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-white sm:h-11 sm:w-11">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
@@ -160,10 +139,10 @@ export function WhyTrust({ lang, dict }: { lang: string; dict: Dictionary }) {
                   </svg>
                 </span>
                 <span className="leading-tight">
-                  <span className="font-script block text-[15px] text-muted">
+                  <span className="font-script block text-[13px] text-muted sm:text-[15px]">
                     {dict.home.hero_phone_label}:
                   </span>
-                  <span className="block text-[14px] font-bold tracking-wide text-ink">
+                  <span className="block text-[13px] font-bold tracking-wide text-ink sm:text-[14px]">
                     {dict.home.hero_phone}
                   </span>
                 </span>

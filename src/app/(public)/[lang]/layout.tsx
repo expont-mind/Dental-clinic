@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Fraunces, Allura } from "next/font/google";
+import { Manrope, Inter, Allura } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../../globals.css";
 import { getDictionary, hasLocale, LOCALES } from "@/lib/i18n/dictionaries";
@@ -14,10 +14,10 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const fraunces = Inter({
   variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["opsz", "SOFT"],
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 

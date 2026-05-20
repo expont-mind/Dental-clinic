@@ -28,28 +28,28 @@ export default async function ContactPage({
           aria-hidden
           className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-primary/30 blur-3xl"
         />
-        <div className="relative mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:py-28">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+        <div className="relative mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:py-28">
+          <div className="grid items-center gap-8 sm:gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary sm:text-[11px]">
                 ◦ {dict.nav.contact}
               </p>
-              <p className="font-script mt-2 text-[34px] leading-none text-primary sm:text-[44px]">
+              <p className="font-script mt-2 text-[24px] leading-none text-primary sm:text-[32px] lg:text-[44px]">
                 {dict.contact.script_accent}
               </p>
-              <h1 className="mt-3 text-[36px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[52px]">
+              <h1 className="font-display mt-2 text-[26px] font-extrabold uppercase leading-[1.1] tracking-tight text-ink sm:mt-3 sm:text-[36px] lg:text-[52px]">
                 {dict.contact.title}
               </h1>
-              <p className="mt-6 max-w-xl text-[15px] leading-7 text-muted">
+              <p className="mt-4 max-w-xl text-[13.5px] leading-7 text-muted sm:mt-6 sm:text-[14.5px] lg:text-[15px]">
                 {dict.contact.lede}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-2.5 sm:mt-8 sm:gap-3">
                 <a
                   href={`tel:${dict.contact.phone.replace(/\s/g, "")}`}
-                  className="group inline-flex items-center gap-3 rounded-full bg-primary py-2 pl-6 pr-2 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
+                  className="group inline-flex items-center gap-2 rounded-full bg-primary py-1.5 pl-5 pr-1.5 text-[13px] font-semibold text-white hover:bg-primary-hover transition-colors sm:gap-3 sm:py-2 sm:pl-6 sm:pr-2 sm:text-[14px]"
                 >
                   {dict.contact.phone}
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary sm:h-9 sm:w-9">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                       <path
                         d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
@@ -63,7 +63,7 @@ export default async function ContactPage({
                 </a>
                 <Link
                   href={`/${lang}/book`}
-                  className="inline-flex items-center gap-2 rounded-full bg-ink py-3 px-6 text-[14px] font-semibold text-white hover:bg-ink-2 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-full bg-ink py-2.5 px-5 text-[13px] font-semibold text-white hover:bg-ink-2 transition-colors sm:py-3 sm:px-6 sm:text-[14px]"
                 >
                   {dict.nav.book}
                   <span aria-hidden>→</span>
@@ -71,9 +71,9 @@ export default async function ContactPage({
               </div>
             </div>
             <div className="relative">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[36px] bg-surface shadow-xl">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-[24px] bg-surface shadow-xl sm:rounded-[36px]">
                 <Image
-                  src="/contact.png"
+                  src="/bfgbfgbfgb.jpg"
                   alt={dict.brand.name}
                   fill
                   priority
@@ -82,18 +82,18 @@ export default async function ContactPage({
                 />
               </div>
               {/* Floating badge — open now */}
-              <div className="absolute -bottom-4 -left-4 flex items-center gap-2.5 rounded-full bg-surface px-4 py-2.5 shadow-lg ring-1 ring-line">
-                <span className="relative flex h-2.5 w-2.5">
+              <div className="absolute -bottom-3 -left-3 flex items-center gap-2 rounded-full bg-surface px-3 py-2 shadow-lg ring-1 ring-line sm:-bottom-4 sm:-left-4 sm:gap-2.5 sm:px-4 sm:py-2.5">
+                <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary sm:h-2.5 sm:w-2.5" />
                 </span>
-                <p className="text-[13px] font-bold text-ink">
+                <p className="text-[12px] font-bold text-ink sm:text-[13px]">
                   {dict.contact.open_now}
                 </p>
               </div>
               <span
                 aria-hidden
-                className="absolute -right-4 -top-4 hidden h-20 w-20 rounded-full bg-accent/70 sm:block"
+                className="absolute -right-3 -top-3 hidden h-16 w-16 rounded-full bg-accent/70 sm:block sm:-right-4 sm:-top-4 sm:h-20 sm:w-20"
               />
             </div>
           </div>
@@ -136,65 +136,48 @@ export default async function ContactPage({
       </section>
 
       {/* Locations / branches */}
-      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:py-28">
         <div className="text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary sm:text-[11px]">
             ◦ {dict.contact.locations_eyebrow}
           </p>
-          <h2 className="mt-3 text-[28px] font-extrabold uppercase leading-tight tracking-tight text-ink sm:text-[40px]">
+          <h2 className="font-display mt-2 text-[22px] font-extrabold uppercase leading-tight tracking-tight text-ink sm:mt-3 sm:text-[28px] lg:text-[40px]">
             {dict.contact.locations_title}
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-7 text-muted">
+          <p className="mx-auto mt-3 text-[13px] leading-7 text-muted sm:mt-5 sm:text-[14.5px] sm:whitespace-nowrap lg:text-[15px]">
             {dict.contact.locations_lede}
           </p>
         </div>
 
-        <div className="mt-12 grid items-stretch gap-6 sm:grid-cols-2">
-          {/* Branch 1 — uses location1.jpg, full image visible */}
-          <article className="relative overflow-hidden rounded-[28px] bg-primary-soft ring-1 ring-primary/20">
-            <div className="relative aspect-[3/2] w-full overflow-hidden">
-              <Image
-                src="/location1.jpg"
-                alt={dict.contact.branch1_name}
-                fill
-                sizes="(max-width: 640px) 100vw, 50vw"
-                className="object-cover"
-              />
-            </div>
-            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
-              ◦ 01
-            </span>
-          </article>
-
-          {/* Branch 2 — uses location2.jpg, full image visible */}
-          <article className="relative overflow-hidden rounded-[28px] bg-accent-soft ring-1 ring-accent/30">
+        <div className="mt-12 flex justify-center">
+          <article className="relative w-full max-w-2xl overflow-hidden rounded-[28px] bg-primary-soft ring-1 ring-primary/20">
             <div className="relative aspect-[3/2] w-full overflow-hidden">
               <Image
                 src="/location2.jpg"
                 alt={dict.contact.branch2_name}
                 fill
-                sizes="(max-width: 640px) 100vw, 50vw"
+                sizes="(max-width: 768px) 100vw, 640px"
                 className="object-cover"
               />
             </div>
-            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-accent-ink shadow-sm">
-              ◦ 02
+            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
+              ◦ Төв шуудангийн салбар
             </span>
           </article>
         </div>
       </section>
 
       {/* Feedback form */}
-      <section className="mx-auto max-w-4xl px-5 pb-20 sm:px-8 sm:pb-28">
-        <div className="rounded-[28px] bg-primary-soft p-8 sm:p-12">
+      <section className="mx-auto max-w-4xl px-5 pb-12 sm:px-8 sm:pb-20 lg:pb-28">
+        <div className="rounded-[20px] bg-primary-soft p-5 sm:rounded-[28px] sm:p-8 lg:p-12">
           <div className="text-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary sm:text-[11px]">
               ◦ {dict.contact.form_eyebrow}
             </p>
-            <h2 className="mt-3 text-[28px] font-extrabold uppercase leading-tight tracking-tight text-ink sm:text-[36px]">
+            <h2 className="font-display mt-2 text-[22px] font-extrabold uppercase leading-tight tracking-tight text-ink sm:mt-3 sm:text-[28px] lg:text-[36px]">
               {dict.contact.form_title}
             </h2>
-            <p className="mx-auto mt-4 max-w-md text-[14px] leading-7 text-muted">
+            <p className="mx-auto mt-3 max-w-md text-[13px] leading-6 text-muted sm:mt-4 sm:text-[14px] sm:leading-7">
               {dict.contact.form_lede}
             </p>
           </div>

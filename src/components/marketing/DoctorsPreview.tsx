@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { listDoctorsPreview } from "@/lib/queries/catalog";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export async function DoctorsPreview({
@@ -10,75 +9,94 @@ export async function DoctorsPreview({
   lang: string;
   dict: Dictionary;
 }) {
-  const doctors = await listDoctorsPreview(3);
-  if (doctors.length === 0) return null;
-
   return (
-    <section>
-      <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-xl">
-            <p className="font-script text-[34px] leading-none text-primary sm:text-[42px]">
-              {dict.home.doctors_eyebrow}
-            </p>
-            <h2 className="mt-3 text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
+    <section className="relative overflow-hidden bg-primary-soft/40">
+      {/* Background accent */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-primary/15 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 -bottom-32 h-80 w-80 rounded-full bg-accent/20 blur-3xl"
+      />
+
+      <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12 lg:py-14">
+        <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-[1fr_1.2fr] lg:gap-14">
+          {/* Left: copy */}
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-primary ring-1 ring-primary/15 sm:text-[10.5px]">
+              ◦ {dict.home.doctors_eyebrow}
+            </span>
+            <h2 className="font-display mt-3 text-[20px] font-extrabold uppercase leading-[1.15] tracking-tight text-ink sm:mt-4 sm:text-[26px] lg:text-[34px]">
               {dict.home.doctors_title}
             </h2>
-            <p className="mt-5 max-w-md text-[15px] leading-7 text-muted">
+            <p className="mt-3 max-w-md text-[13.5px] leading-7 text-muted sm:mt-4 sm:text-[14px]">
               {dict.home.doctors_lede}
             </p>
-          </div>
-          <Link
-            href={`/${lang}/doctors`}
-            className="text-[14px] font-semibold text-primary-ink hover:text-ink"
-          >
-            {dict.home.doctors_cta}
-          </Link>
-        </div>
 
-        <ul className="mt-12 grid gap-5 sm:grid-cols-3">
-          {doctors.map((d) => {
-            const name = lang === "mn" ? d.name_mn : d.name_en;
-            const title = lang === "mn" ? d.title_mn : d.title_en;
-            const deptName =
-              lang === "mn" ? d.department.name_mn : d.department.name_en;
-            return (
-              <li key={d.id} className="group">
-                <Link href={`/${lang}/doctors/${d.slug}`} className="block">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[28px] bg-surface-2">
-                    {d.photo_url ? (
-                      <Image
-                        src={d.photo_url}
-                        alt={name}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center font-display text-6xl text-muted-2">
-                        {name.charAt(0)}
-                      </div>
-                    )}
-                    <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-2 backdrop-blur">
-                      {deptName}
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between gap-3">
-                    <h3 className="font-display text-xl font-medium leading-tight tracking-tight">
-                      {name}
-                    </h3>
-                    {d.years_exp != null && (
-                      <span className="text-xs text-muted-2 whitespace-nowrap">
-                        {d.years_exp}+ {dict.doctors.years_exp}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm leading-6 text-muted">{title}</p>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+            <div className="mt-5 flex flex-wrap items-center gap-3 sm:mt-6 sm:gap-4">
+              <Link
+                href={`/${lang}/doctors`}
+                className="group inline-flex items-center gap-2 rounded-full bg-primary py-2 pl-5 pr-1.5 text-[13px] font-bold text-white hover:bg-primary-hover transition-colors sm:gap-2.5 sm:py-2.5 sm:pl-6 sm:pr-2 sm:text-[13.5px]"
+              >
+                Эмч нартай танилцах
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5 sm:h-8 sm:w-8">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M7 17 17 7M9 7h8v8"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </Link>
+
+              {/* Stats inline */}
+              <div className="flex items-center gap-3 border-l border-line/60 pl-3 sm:gap-4 sm:pl-4">
+                <div>
+                  <p className="font-display text-[18px] font-extrabold leading-none text-primary sm:text-[20px]">
+                    13+
+                  </p>
+                  <p className="mt-1 text-[9.5px] font-semibold uppercase tracking-wider text-muted-2 sm:text-[10.5px]">
+                    Эмч
+                  </p>
+                </div>
+                <div>
+                  <p className="font-display text-[18px] font-extrabold leading-none text-primary sm:text-[20px]">
+                    10+
+                  </p>
+                  <p className="mt-1 text-[9.5px] font-semibold uppercase tracking-wider text-muted-2 sm:text-[10.5px]">
+                    Жил туршлага
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: team photo with floating accents */}
+          <div className="relative">
+            <span
+              aria-hidden
+              className="absolute -bottom-2 -right-2 h-24 w-32 rounded-[20px] bg-primary/25 sm:-bottom-3 sm:-right-3 sm:h-32 sm:w-44 lg:h-40 lg:w-56 lg:rounded-[24px]"
+            />
+            <span
+              aria-hidden
+              className="absolute -left-2 -top-2 hidden h-12 w-12 rounded-full bg-accent/70 sm:block sm:-left-3 sm:-top-3 sm:h-16 sm:w-16"
+            />
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[20px] shadow-xl ring-1 ring-line sm:rounded-[24px]">
+              <Image
+                src="/DSC02747.jpg"
+                alt={dict.home.doctors_title}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 620px"
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

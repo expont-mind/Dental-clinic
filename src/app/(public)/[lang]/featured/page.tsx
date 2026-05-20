@@ -15,23 +15,23 @@ export default async function FeaturedPage({
   return (
     <div className="bg-bg">
       <section className="bg-forest-grain text-white">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:py-28">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary sm:text-[11px]">
               ◦ {dict.about.featured_eyebrow}
             </p>
-            <p className="font-script mt-2 text-[34px] leading-none text-primary sm:text-[42px]">
+            <p className="font-script mt-2 text-[22px] leading-none text-primary sm:text-[32px] lg:text-[42px]">
               {dict.brand.name}
             </p>
-            <h1 className="mt-2 text-[32px] font-extrabold uppercase leading-tight tracking-tight sm:text-[44px]">
+            <h1 className="font-display mt-2 text-[24px] font-extrabold uppercase leading-tight tracking-tight sm:text-[32px] lg:text-[44px]">
               {dict.about.featured_title}
             </h1>
-            <p className="mt-5 text-[15px] leading-7 text-white/65">
+            <p className="mt-4 text-[13.5px] leading-7 text-white/65 sm:mt-5 sm:text-[14.5px] lg:text-[15px]">
               {dict.about.featured_lede}
             </p>
           </div>
 
-          <ul className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-8 grid gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 lg:mt-14 lg:grid-cols-3">
             {dict.about.featured_items.map((item) => (
               <li
                 key={item.image}

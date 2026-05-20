@@ -84,14 +84,14 @@ export default async function ServicesPage({
           aria-hidden
           className="pointer-events-none absolute -bottom-40 -left-32 h-80 w-80 rounded-full bg-accent/20 blur-3xl"
         />
-        <div className="relative mx-auto max-w-5xl px-5 py-20 text-center sm:px-8 sm:py-28">
-          <p className="font-script text-[32px] leading-none text-primary sm:text-[42px]">
+        <div className="relative mx-auto max-w-5xl px-5 py-12 text-center sm:px-8 sm:py-20 lg:py-28">
+          <p className="font-script text-[22px] leading-none text-primary sm:text-[32px] lg:text-[42px]">
             {dict.brand.name}
           </p>
-          <h1 className="mx-auto mt-3 max-w-3xl text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[48px]">
+          <h1 className="font-display mx-auto mt-3 max-w-3xl text-[24px] font-extrabold uppercase leading-[1.1] tracking-tight text-ink sm:text-[34px] lg:text-[48px]">
             {dict.services.title}
           </h1>
-          <p className="mx-auto mt-5 max-w-lg text-[15px] leading-7 text-muted">
+          <p className="mx-auto mt-4 max-w-lg text-[13.5px] leading-7 text-muted sm:mt-5 sm:text-[14.5px] lg:text-[15px]">
             {dict.services.lede}
           </p>
         </div>
@@ -115,24 +115,24 @@ export default async function ServicesPage({
 
       {/* CTA band */}
       <section className="px-5 pb-5 sm:px-8">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-forest-grain px-8 py-12 text-center text-white sm:rounded-[40px] sm:px-12 sm:py-16">
-          <p className="font-script text-[28px] leading-none text-primary sm:text-[36px]">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[20px] bg-forest-grain px-6 py-8 text-center text-white sm:rounded-[28px] sm:px-10 sm:py-12 lg:rounded-[40px] lg:px-12 lg:py-16">
+          <p className="font-script text-[20px] leading-none text-primary sm:text-[28px] lg:text-[36px]">
             {dict.brand.name}
           </p>
-          <h2 className="mt-2 text-[26px] font-extrabold uppercase tracking-tight sm:text-[36px]">
+          <h2 className="font-display mt-2 text-[20px] font-extrabold uppercase tracking-tight sm:text-[26px] lg:text-[36px]">
             {dict.home.hero_schedule_btn}
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-[14px] leading-6 text-white/60">
+          <p className="mx-auto mt-3 max-w-md text-[12.5px] leading-6 text-white/60 sm:text-[14px]">
             {isMn
               ? "Манай мэргэжилтэн эмч нартай уулзаж, таны инээмсэглэлийг хамтдаа төлөвлөе."
               : "Meet our specialists and plan your perfect smile together."}
           </p>
           <Link
             href={`/${lang}/book`}
-            className="group mt-7 inline-flex items-center gap-3 rounded-full bg-primary py-2.5 pl-7 pr-3 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
+            className="group mt-5 inline-flex items-center gap-2 rounded-full bg-primary py-2 pl-5 pr-2 text-[13px] font-semibold text-white hover:bg-primary-hover transition-colors sm:mt-7 sm:gap-3 sm:py-2.5 sm:pl-7 sm:pr-3 sm:text-[14px]"
           >
             {dict.nav.book}
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5 sm:h-9 sm:w-9">
               <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
             </span>
           </Link>

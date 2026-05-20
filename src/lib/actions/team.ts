@@ -175,6 +175,29 @@ export async function createDoctorAction(
   redirect("/admin/team");
 }
 
+export type DeleteDoctorState = {
+  ok?: boolean;
+  error?: string;
+};
+
+export async function deleteDoctorAction(id: string): Promise<DeleteDoctorState> {
+  if (!isSupabaseConfigured()) return { error: "Supabase холбогдоогүй байна." };
+  const doctorId = id.trim();
+  if (!doctorId) return { error: "ID шаардлагатай." };
+
+  const supabase = createSupabaseAdmin();
+
+  await supabase.from("doctor_branches").delete().eq("doctor_id", doctorId);
+  await supabase.from("doctor_services").delete().eq("doctor_id", doctorId);
+
+  const { error } = await supabase.from("doctors").delete().eq("id", doctorId);
+  if (error) return { error: translateError(error) };
+
+  after(() => emitSync({ kind: "staff", id: doctorId }));
+  revalidatePath("/admin/team");
+  return { ok: true };
+}
+
 export type UpdateDoctorState = {
   error?: string;
   ok?: boolean;

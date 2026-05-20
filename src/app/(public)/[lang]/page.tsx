@@ -5,10 +5,9 @@ import { StatsStrip } from "@/components/marketing/StatsStrip";
 import { ServicesGrid } from "@/components/marketing/ServicesGrid";
 import { WhyTrust } from "@/components/marketing/WhyTrust";
 import { ProcessSteps } from "@/components/marketing/ProcessSteps";
-import { CareCards } from "@/components/marketing/CareCards";
+import { DigitalDiagnostics } from "@/components/marketing/DigitalDiagnostics";
 import { DoctorsPreview } from "@/components/marketing/DoctorsPreview";
 import { Testimonials } from "@/components/marketing/Testimonials";
-import { CTABand } from "@/components/marketing/CTABand";
 
 export default async function HomePage({
   params,
@@ -22,14 +21,13 @@ export default async function HomePage({
   return (
     <>
       <Hero lang={lang} dict={dict} />
+      <DigitalDiagnostics lang={lang} dict={dict} />
       <StatsStrip dict={dict} />
       <ServicesGrid lang={lang} dict={dict} />
       <WhyTrust lang={lang} dict={dict} />
       <ProcessSteps lang={lang} dict={dict} />
-      <CareCards dict={dict} />
       <DoctorsPreview lang={lang} dict={dict} />
       <Testimonials dict={dict} />
-      <CTABand lang={lang} dict={dict} />
     </>
   );
 }

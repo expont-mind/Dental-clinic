@@ -95,8 +95,7 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
-  font-feature-settings: "ss01", "ss02";
+  font-family: var(--font-fraunces), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Flowing handwritten accent — used above big headlines */

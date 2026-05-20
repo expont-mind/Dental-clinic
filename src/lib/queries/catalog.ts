@@ -60,18 +60,10 @@ export async function getDepartmentBySlug(
   return data;
 }
 
-/**
- * Override doctor photo_url with local /p1..p6.jpg, cycling by index so all
- * six images are used when there are six or more doctors. List ordering is
- * deterministic (sort_order from DB), so each doctor keeps a stable photo.
- */
 function withLocalPhotos<T extends { photo_url: string | null }>(
   docs: T[],
 ): T[] {
-  return docs.map((d, i) => ({
-    ...d,
-    photo_url: `/p${(i % 6) + 1}.jpg`,
-  }));
+  return docs;
 }
 
 /**
