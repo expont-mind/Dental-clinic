@@ -272,7 +272,10 @@ export async function getSiblingServices(
   return (data ?? []) as Service[];
 }
 
-/** Top-level parent categories only (parent_id IS NULL, no IT Doctor services) */
+/** Top-level parent categories only (parent_id IS NULL).
+ * Bookable vs. non-bookable services both appear here — the
+ * `itdoctor_service_id` value now distinguishes "can book online" from
+ * "info-only" rather than "managed externally". */
 export async function listActiveServicesPublic(): Promise<Service[]> {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createSupabaseServer();
@@ -280,11 +283,65 @@ export async function listActiveServicesPublic(): Promise<Service[]> {
     .from("services")
     .select("*")
     .eq("is_active", true)
-    .is("itdoctor_service_id", null)
     .is("parent_id", null)
     .order("sort_order", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Service[];
+}
+
+/** Active services flagged is_featured = true. Used by /[lang]/featured.
+ *  Includes both parents and children — whatever has been pinned. */
+export async function listFeaturedServicesPublic(): Promise<Service[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("is_active", true)
+    .eq("is_featured", true)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Service[];
+}
+
+/** Returns active top-level parents with their active children attached.
+ * One round-trip to Supabase (two queries running in parallel) so the
+ * /services page can render the full catalog tree without N+1 fetches. */
+export async function listServicesByParentTree(): Promise<
+  { parent: Service; children: Service[] }[]
+> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const [{ data: parents, error: pErr }, { data: kids, error: cErr }] =
+    await Promise.all([
+      supabase
+        .from("services")
+        .select("*")
+        .eq("is_active", true)
+        .is("parent_id", null)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("services")
+        .select("*")
+        .eq("is_active", true)
+        .not("parent_id", "is", null)
+        .order("sort_order", { ascending: true }),
+    ]);
+  if (pErr) throw pErr;
+  if (cErr) throw cErr;
+
+  const childrenByParent = new Map<string, Service[]>();
+  for (const c of (kids ?? []) as Service[]) {
+    if (!c.parent_id) continue;
+    const list = childrenByParent.get(c.parent_id) ?? [];
+    list.push(c);
+    childrenByParent.set(c.parent_id, list);
+  }
+
+  return ((parents ?? []) as Service[]).map((parent) => ({
+    parent,
+    children: childrenByParent.get(parent.id) ?? [],
+  }));
 }
 
 /** Child services under a parent */

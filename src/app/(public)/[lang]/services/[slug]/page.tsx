@@ -230,7 +230,7 @@ async function ParentDetail({
       {/* Overview */}
       <section
         id="overview"
-        className="scroll-mt-20 px-5 pt-16 sm:px-8 sm:pt-20"
+        className="scroll-mt-20 px-5 pt-10 pb-2 sm:px-8 sm:pt-14"
       >
         <div className="mx-auto max-w-3xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
@@ -249,11 +249,11 @@ async function ParentDetail({
 
         {/* Child services list */}
         {children.length > 0 && (
-          <div className="mx-auto mt-12 max-w-4xl">
-            <h2 className="text-[20px] font-extrabold uppercase leading-tight tracking-tight text-ink sm:text-[24px]">
+          <div className="mx-auto mt-10 max-w-3xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
               {dict.services.child_services_title}
-            </h2>
-            <ul className="mt-5 space-y-2">
+            </p>
+            <ul className="mt-3 space-y-2">
               {children.map((child) => {
                 const childName = isMn ? child.name_mn : child.name_en;
                 const childDesc = isMn
@@ -268,14 +268,14 @@ async function ParentDetail({
                   <li key={child.id}>
                     <Link
                       href={`/${lang}/services/${child.slug}`}
-                      className="group flex items-center gap-4 rounded-2xl bg-surface px-3 py-3 ring-1 ring-line transition-all hover:ring-primary/40 hover:bg-primary-soft/30 sm:px-4 sm:py-4"
+                      className="group flex items-center gap-4 rounded-2xl bg-surface px-3.5 py-3 ring-1 ring-line transition-all hover:ring-primary/40 hover:bg-primary-soft/30 sm:px-4 sm:py-3.5"
                     >
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-primary-soft sm:h-16 sm:w-16">
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-primary-soft sm:h-[72px] sm:w-[72px]">
                         <Image
                           src={childImg}
                           alt={childName}
                           fill
-                          sizes="64px"
+                          sizes="72px"
                           className="object-cover"
                         />
                       </div>
@@ -284,7 +284,7 @@ async function ParentDetail({
                           {childName}
                         </h3>
                         {childDesc && (
-                          <p className="mt-0.5 line-clamp-1 text-[12px] leading-5 text-muted">
+                          <p className="mt-1 line-clamp-2 text-[12px] leading-[1.45] text-muted sm:text-[13px]">
                             {childDesc}
                           </p>
                         )}

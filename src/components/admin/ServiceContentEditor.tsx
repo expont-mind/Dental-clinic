@@ -59,18 +59,9 @@ export function ServiceContentEditor({ defaultMn, defaultEn }: Props) {
   const serialisedEn = useMemo(() => JSON.stringify(prune(en)), [en]);
 
   return (
-    <div className="rounded-2xl border border-line bg-[#fafbfc] p-5 sm:p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-display text-[16px] font-bold text-ink">
-            Үйлчилгээний агуулга
-          </h3>
-          <p className="mt-0.5 text-[11px] text-[#6b7280]">
-            Дэлгэрэнгүй хуудсанд харагдах эмчилгээ, давуу тал, үе шат,
-            үйлчлүүлэгчийн сэтгэгдэл, асуулт хариулт, үнийн жагсаалт.
-          </p>
-        </div>
-        <div className="inline-flex rounded-full bg-white p-1 ring-1 ring-line">
+    <div>
+      <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
+        <div className="inline-flex rounded-full bg-[#f3f4f6] p-1">
           {(["mn", "en"] as Lang[]).map((l) => (
             <button
               key={l}
@@ -92,7 +83,7 @@ export function ServiceContentEditor({ defaultMn, defaultEn }: Props) {
       <input type="hidden" name="content_mn" value={serialisedMn} />
       <input type="hidden" name="content_en" value={serialisedEn} />
 
-      <div className="space-y-6">
+      <div className="space-y-7">
         <TreatmentsSection
           values={current.treatments ?? []}
           onChange={(treatments) => setCurrent({ ...current, treatments })}
@@ -146,16 +137,18 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl bg-white p-4 ring-1 ring-line">
-      <header className="mb-3 flex items-start justify-between gap-3">
+    <section>
+      <header className="mb-3 flex items-start justify-between gap-3 border-b border-line/70 pb-2">
         <div>
-          <h4 className="text-[13px] font-bold text-ink">{title}</h4>
-          <p className="mt-0.5 text-[11px] text-[#6b7280]">{hint}</p>
+          <h4 className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#374151]">
+            {title}
+          </h4>
+          <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>
         </div>
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:border-primary hover:bg-primary-soft/40 transition-colors"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary-soft/50 transition-colors"
         >
           <Plus className="h-3 w-3" strokeWidth={2.5} />
           {addLabel}
@@ -174,13 +167,13 @@ function RowWrap({
   children: React.ReactNode;
 }) {
   return (
-    <div className="group flex items-start gap-2 rounded-lg bg-[#fafbfc] p-2.5 ring-1 ring-line">
+    <div className="group relative flex items-start gap-2 rounded-lg bg-[#fafbfc] p-2.5">
       <div className="flex-1 space-y-2">{children}</div>
       <button
         type="button"
         onClick={onRemove}
         aria-label="Remove"
-        className="mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#9ca3af] hover:bg-rose-50 hover:text-rose-600 transition-colors"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#9ca3af] hover:bg-rose-50 hover:text-rose-600 transition-colors"
       >
         <Trash2 className="h-3.5 w-3.5" strokeWidth={2.25} />
       </button>
@@ -616,7 +609,7 @@ function TestimonialsSection({
 
 function EmptyHint({ lang }: { lang: Lang }) {
   return (
-    <p className="rounded-md bg-white px-3 py-2 text-[11px] italic text-[#9ca3af] ring-1 ring-line/60">
+    <p className="text-[11px] italic text-[#9ca3af]">
       {lang === "mn"
         ? "Хоосон — нэмэхгүй бол энэ хэсэг нийтийн хуудсанд харагдахгүй."
         : "Empty — leave empty and this section won't render on the public page."}

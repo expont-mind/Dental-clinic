@@ -25,12 +25,14 @@ export type ServiceFormState = {
     price_text_en?: string;
     duration_text_mn?: string;
     duration_text_en?: string;
-    category?: string;
     price_mnt?: string;
     duration_min?: string;
     sort_order?: string;
     is_active?: string;
+    is_featured?: string;
+    is_bookable?: string;
     itdoctor_service_id?: string;
+    existing_itdoctor_service_id?: string;
     parent_id?: string;
     image_url?: string;
     hero_image_url?: string;
@@ -98,18 +100,36 @@ function readFields(formData: FormData): NonNullable<ServiceFormState["values"]>
     price_text_en: String(formData.get("price_text_en") || "").trim(),
     duration_text_mn: String(formData.get("duration_text_mn") || "").trim(),
     duration_text_en: String(formData.get("duration_text_en") || "").trim(),
-    category: String(formData.get("category") || "").trim(),
     price_mnt: String(formData.get("price_mnt") || "").trim(),
     duration_min: String(formData.get("duration_min") || "").trim(),
     sort_order: String(formData.get("sort_order") || "").trim(),
     is_active: formData.get("is_active") === "on" ? "on" : "",
+    is_featured: formData.get("is_featured") === "on" ? "on" : "",
+    is_bookable: formData.get("is_bookable") === "on" ? "on" : "",
     itdoctor_service_id: String(formData.get("itdoctor_service_id") || "").trim(),
+    existing_itdoctor_service_id: String(
+      formData.get("existing_itdoctor_service_id") || "",
+    ).trim(),
     parent_id: String(formData.get("parent_id") || "").trim(),
     image_url: String(formData.get("image_url") || "").trim(),
     hero_image_url: String(formData.get("hero_image_url") || "").trim(),
     content_mn: String(formData.get("content_mn") || "").trim(),
     content_en: String(formData.get("content_en") || "").trim(),
   };
+}
+
+/** Default IT Doctor service ID assigned when an admin marks a service as
+ * bookable but no existing ID is on the row. Bookable services that already
+ * had a custom ID keep that ID. Set 0/NULL when the service is not bookable. */
+const DEFAULT_BOOKABLE_ITDOCTOR_ID = 35;
+
+function resolveItdoctorServiceId(
+  v: NonNullable<ServiceFormState["values"]>,
+): number | null {
+  if (v.is_bookable !== "on") return null;
+  const existing = Number(v.existing_itdoctor_service_id);
+  if (Number.isFinite(existing) && existing > 0) return existing;
+  return DEFAULT_BOOKABLE_ITDOCTOR_ID;
 }
 
 function parseContentJson(raw: string | undefined): ServiceContentBlock {
@@ -161,7 +181,7 @@ export async function createServiceAction(
   const sortOrder = Number(values.sort_order);
   const duration = Number(values.duration_min);
 
-  const itdoctorId = Number(values.itdoctor_service_id);
+  const itdoctorId = resolveItdoctorServiceId(values);
   const parentId = values.parent_id || null;
 
   const { data: inserted, error } = await supabase
@@ -180,16 +200,16 @@ export async function createServiceAction(
       price_text_en: values.price_text_en || null,
       duration_text_mn: values.duration_text_mn || null,
       duration_text_en: values.duration_text_en || null,
-      category: values.category || null,
       price_cents: priceCentsFromForm(values.price_mnt!),
       currency: "MNT",
       duration_min: Number.isFinite(duration) && duration > 0 ? duration : null,
-      itdoctor_service_id: Number.isFinite(itdoctorId) && itdoctorId > 0 ? itdoctorId : null,
+      itdoctor_service_id: itdoctorId,
       image_url: values.image_url || null,
       hero_image_url: values.hero_image_url || null,
       content_mn: parseContentJson(values.content_mn),
       content_en: parseContentJson(values.content_en),
       is_active: values.is_active === "on",
+      is_featured: values.is_featured === "on",
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
     })
     .select("id")
@@ -228,7 +248,7 @@ export async function updateServiceAction(
   const sortOrder = Number(values.sort_order);
   const duration = Number(values.duration_min);
 
-  const itdoctorId = Number(values.itdoctor_service_id);
+  const itdoctorId = resolveItdoctorServiceId(values);
   const parentId = values.parent_id || null;
 
   const supabase = createSupabaseAdmin();
@@ -247,15 +267,15 @@ export async function updateServiceAction(
       price_text_en: values.price_text_en || null,
       duration_text_mn: values.duration_text_mn || null,
       duration_text_en: values.duration_text_en || null,
-      category: values.category || null,
       price_cents: priceCentsFromForm(values.price_mnt!),
       duration_min: Number.isFinite(duration) && duration > 0 ? duration : null,
-      itdoctor_service_id: Number.isFinite(itdoctorId) && itdoctorId > 0 ? itdoctorId : null,
+      itdoctor_service_id: itdoctorId,
       image_url: values.image_url || null,
       hero_image_url: values.hero_image_url || null,
       content_mn: parseContentJson(values.content_mn),
       content_en: parseContentJson(values.content_en),
       is_active: values.is_active === "on",
+      is_featured: values.is_featured === "on",
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
     })
     .eq("id", id)

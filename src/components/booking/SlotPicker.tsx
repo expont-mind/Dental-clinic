@@ -42,20 +42,54 @@ function generateDateRange(count: number): { key: string; date: Date }[] {
   return dates;
 }
 
+// Hardcoded so the labels look identical on every browser regardless of
+// whether the runtime ships Mongolian ICU locale data. Intl.DateTimeFormat
+// with mn-MN silently falls back to en-US on browsers without Mongolian
+// support, which produced the "dates look English on /mn" bug.
+
+const WEEKDAYS_MN = ["Ня", "Да", "Мя", "Лх", "Пү", "Ба", "Бя"];
+const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS_MN = [
+  "1-р сар",
+  "2-р сар",
+  "3-р сар",
+  "4-р сар",
+  "5-р сар",
+  "6-р сар",
+  "7-р сар",
+  "8-р сар",
+  "9-р сар",
+  "10-р сар",
+  "11-р сар",
+  "12-р сар",
+];
+const MONTHS_EN = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 function formatWeekday(date: Date, lang: string): string {
-  return new Intl.DateTimeFormat(lang === "mn" ? "mn-MN" : "en-US", {
-    weekday: "short",
-  }).format(date);
+  const arr = lang === "mn" ? WEEKDAYS_MN : WEEKDAYS_EN;
+  return arr[date.getDay()];
 }
 
 function formatMonth(date: Date, lang: string): string {
-  return new Intl.DateTimeFormat(lang === "mn" ? "mn-MN" : "en-US", {
-    month: "short",
-  }).format(date);
+  const arr = lang === "mn" ? MONTHS_MN : MONTHS_EN;
+  return arr[date.getMonth()];
 }
 
 function formatDay(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(date);
+  return String(date.getDate()).padStart(2, "0");
 }
 
 export function SlotPicker({

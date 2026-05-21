@@ -25,9 +25,8 @@ export default async function AdminServiceNewPage() {
         </Link>
       </header>
 
-      <div className="px-6 py-8 sm:px-10 sm:py-10">
-        <div className="rounded-[22px] bg-white p-6 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.18)] ring-1 ring-line sm:p-8">
-          <ServiceForm
+      <div className="mx-auto max-w-4xl px-6 py-8 sm:px-10 sm:py-10">
+        <ServiceForm
             departments={departments.map((d) => ({
               id: d.id,
               name_mn: d.name_mn,
@@ -39,7 +38,6 @@ export default async function AdminServiceNewPage() {
               name_en: b.name_en,
             }))}
           />
-        </div>
       </div>
     </div>
   );

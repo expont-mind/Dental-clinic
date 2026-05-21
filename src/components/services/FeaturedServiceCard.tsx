@@ -50,20 +50,13 @@ export function FeaturedServiceCard({
             {item.description}
           </p>
         )}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          {item.priceLabel && (
-            <span className="rounded-full bg-primary-soft px-3.5 py-1.5 text-[12px] font-bold text-primary-ink">
-              {item.priceLabel}
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-primary">
-            {viewLabel}
-            <ArrowRight
-              className="h-4 w-4 transition-transform group-hover:translate-x-1"
-              strokeWidth={2.5}
-            />
-          </span>
-        </div>
+        <span className="mt-6 inline-flex items-center gap-1.5 text-[13px] font-bold text-primary">
+          {viewLabel}
+          <ArrowRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-1"
+            strokeWidth={2.5}
+          />
+        </span>
       </div>
     </Link>
   );

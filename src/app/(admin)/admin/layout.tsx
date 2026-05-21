@@ -60,6 +60,11 @@ const NAV = [
     icon: "M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
   },
   {
+    href: "/admin/departments",
+    label: "Тасгууд",
+    icon: "M3 7h18M3 12h18M3 17h12M6 7v10M14 12v5",
+  },
+  {
     href: "/admin/branches",
     label: "Салбарууд",
     icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",

@@ -9,7 +9,6 @@ export type ServiceCardItem = {
   description: string | null;
   priceLabel: string | null;
   imageUrl: string;
-  category: string | null;
   isFeatured: boolean;
 };
 
@@ -40,13 +39,8 @@ export function ServiceCard({
         />
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"
+          className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"
         />
-        {item.priceLabel && (
-          <span className="absolute bottom-3 right-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-primary shadow-sm backdrop-blur">
-            {item.priceLabel}
-          </span>
-        )}
       </div>
 
       <div className="p-5 sm:p-6">

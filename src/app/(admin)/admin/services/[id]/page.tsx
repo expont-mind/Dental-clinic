@@ -13,13 +13,14 @@ export default async function AdminServiceEditPage({
 }) {
   await requireAdminUser();
   const { id } = await params;
-  const [service, departments, branches, branchIds, allServices] = await Promise.all([
-    getServiceById(id),
-    listDepartments(),
-    listBranchesAdmin(),
-    listBranchIdsForService(id),
-    listServicesAdmin(),
-  ]);
+  const [service, departments, branches, branchIds, allServices] =
+    await Promise.all([
+      getServiceById(id),
+      listDepartments(),
+      listBranchesAdmin(),
+      listBranchIdsForService(id),
+      listServicesAdmin(),
+    ]);
   // Parent options: services without a parent (excluding self)
   const parentOptions = allServices
     .filter((s) => !s.parent_id && s.id !== id)
@@ -45,9 +46,8 @@ export default async function AdminServiceEditPage({
         </Link>
       </header>
 
-      <div className="px-6 py-8 sm:px-10 sm:py-10">
-        <div className="rounded-[22px] bg-white p-6 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.18)] ring-1 ring-line sm:p-8">
-          <ServiceForm
+      <div className="mx-auto max-w-4xl px-6 py-8 sm:px-10 sm:py-10">
+        <ServiceForm
             departments={departments.map((d) => ({
               id: d.id,
               name_mn: d.name_mn,
@@ -74,7 +74,6 @@ export default async function AdminServiceEditPage({
               duration_text_en: service.duration_text_en,
               price_text_mn: service.price_text_mn,
               price_text_en: service.price_text_en,
-              category: service.category,
               price_cents: service.price_cents,
               duration_min: service.duration_min,
               parent_id: service.parent_id ?? null,
@@ -82,12 +81,12 @@ export default async function AdminServiceEditPage({
               image_url: service.image_url ?? null,
               hero_image_url: service.hero_image_url ?? null,
               is_active: service.is_active,
+              is_featured: service.is_featured ?? false,
               sort_order: service.sort_order,
               content_mn: service.content_mn ?? null,
               content_en: service.content_en ?? null,
             }}
           />
-        </div>
       </div>
     </div>
   );

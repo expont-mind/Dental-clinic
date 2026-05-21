@@ -76,7 +76,7 @@ function LangSlot({
     "w-full rounded-xl border border-line bg-white px-4 py-2.5 pl-12 text-[13px] outline-none placeholder:text-[#c1c7cf] focus:border-primary";
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-2.5 grid h-6 w-6 place-items-center rounded-md bg-[#f3f4f6] text-[9px] font-bold uppercase tracking-wider text-[#6b7280] ring-1 ring-line">
+      <span className="pointer-events-none absolute left-3 top-2.5 grid h-6 w-6 place-items-center rounded-md bg-[#f3f4f6] text-[9px] font-bold uppercase tracking-wider text-[#6b7280]">
         {flag}
       </span>
       {mode === "textarea" ? (

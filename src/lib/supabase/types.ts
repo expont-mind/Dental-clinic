@@ -101,6 +101,7 @@ export interface Service {
   content_mn: ServiceContentBlock;
   content_en: ServiceContentBlock;
   is_active: boolean;
+  is_featured: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;

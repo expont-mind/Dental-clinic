@@ -62,6 +62,16 @@ const POSTGRES_CODE_MAP: Record<string, string> = {
   "P0001": "Үйлдлийг гүйцэтгэх боломжгүй.",
 };
 
+// When a 23505 (unique_violation) lands, the underlying details/message often
+// names the constraint. Map those names to a Mongolian field-level hint so the
+// user knows exactly which field collided.
+const UNIQUE_CONSTRAINT_HINTS: Record<string, string> = {
+  services_slug_key: "Энэ slug өөр үйлчилгээнд бүртгэлтэй байна.",
+  doctors_slug_key: "Энэ slug өөр эмчид бүртгэлтэй байна.",
+  doctors_itdoctor_dentist_id_key:
+    "Энэ IT Doctor Dentist ID өөр эмчид бүртгэлтэй байна.",
+};
+
 export function translateError(err: unknown): string {
   if (!err) return "Системийн алдаа. Дахин оролдоно уу.";
 
@@ -70,6 +80,14 @@ export function translateError(err: unknown): string {
 
   // 1. Postgres SQLSTATE codes
   if (e.code && typeof e.code === "string" && POSTGRES_CODE_MAP[e.code]) {
+    // For unique-violations, try to find a more specific message based on
+    // the constraint name that appears in details / message.
+    if (e.code === "23505") {
+      const haystack = `${e.details ?? ""} ${e.message ?? ""}`.toLowerCase();
+      for (const [name, hint] of Object.entries(UNIQUE_CONSTRAINT_HINTS)) {
+        if (haystack.includes(name.toLowerCase())) return hint;
+      }
+    }
     return POSTGRES_CODE_MAP[e.code];
   }
 
