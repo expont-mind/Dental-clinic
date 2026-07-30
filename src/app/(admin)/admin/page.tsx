@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireAdminUser } from "@/lib/auth";
 import { getAdminBookingStats } from "@/lib/queries/admin";
 import { loadBotDashboardData } from "@/lib/queries/dentexgo-dashboard";
-import { threadUrl } from "@/lib/messenger/link";
 import { NeedsHumanQueue } from "@/components/admin/NeedsHumanQueue";
 import { BotInsightsStrip } from "@/components/admin/BotInsightsStrip";
 
@@ -110,13 +109,6 @@ export default async function AdminDashboardPage() {
   }
 
   const bot = await loadBotDashboardData();
-  // threadUrl() reads env vars, so the URL has to be resolved on the server and
-  // handed to the client component as data.
-  const threadUrls: Record<string, string> = {};
-  for (const c of bot.queue) {
-    const url = threadUrl(c);
-    if (url) threadUrls[c.id] = url;
-  }
   // Baseline for the "waiting N minutes" labels. Read here, not in the client
   // component's render, which react-hooks/purity forbids — the same reason
   // src/app/(public)/[lang]/account/page.tsx carries this disable comment.
@@ -181,7 +173,6 @@ export default async function AdminDashboardPage() {
           <NeedsHumanQueue
             initialConversations={bot.queue}
             initialError={bot.queueError?.message ?? null}
-            initialThreadUrls={threadUrls}
             serverNow={serverNow}
           />
         )}

@@ -9,7 +9,6 @@ import {
   type DentexgoConversation,
 } from "@/lib/dentexgo/conversations";
 import { describeDentexgoError } from "@/lib/dentexgo/errors";
-import { threadUrl } from "@/lib/messenger/link";
 
 /**
  * Hours to silence the bot when staff take a conversation over. Matches the
@@ -21,16 +20,7 @@ import { threadUrl } from "@/lib/messenger/link";
 const TAKE_OVER_HOURS = 12;
 
 export type QueueResult =
-  | {
-      ok: true;
-      conversations: DentexgoConversation[];
-      /**
-       * Resolved thread URLs by conversation id. Built here because threadUrl()
-       * reads env vars the browser can't see — otherwise a poll would replace
-       * env-templated links with the raw server-provided ones.
-       */
-      threadUrls: Record<string, string>;
-    }
+  | { ok: true; conversations: DentexgoConversation[] }
   | { ok: false; error: string; code?: string };
 
 export type ConversationActionResult =
@@ -59,12 +49,7 @@ export async function fetchNeedsHumanAction(): Promise<QueueResult> {
       needsHuman: true,
       limit: 100,
     });
-    const threadUrls: Record<string, string> = {};
-    for (const c of conversations) {
-      const url = threadUrl(c);
-      if (url) threadUrls[c.id] = url;
-    }
-    return { ok: true, conversations, threadUrls };
+    return { ok: true, conversations };
   } catch (e) {
     console.error("[fetchNeedsHumanAction]", e);
     const { message, code } = describeDentexgoError(e);

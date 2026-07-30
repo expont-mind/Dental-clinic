@@ -13,8 +13,12 @@ export interface DentexgoConversation {
   psid: string;
   channel: ConversationChannel;
   /**
-   * Recipient's name from Meta. The contract types this `string`, but Meta does
-   * not always supply one, so callers must handle absence.
+   * Recipient's display name, enriched from Meta's Graph participants edge when
+   * the bot escalates the thread. `null` if not yet enriched — escalations that
+   * predate the feature, or Instagram.
+   *
+   * This is load-bearing: `messenger_inbox_link` only opens the inbox, so the
+   * name is how staff locate the right thread once there.
    */
   patient_name: string | null;
   needs_human: boolean;
@@ -23,16 +27,18 @@ export interface DentexgoConversation {
   bot_paused_active: boolean;
   last_message_at: string;
   /**
-   * Meta Graph thread id (`t_…`). Documented as stable and API-supported.
-   * `null` for Instagram, or until the bot first escalates the thread.
+   * Link into the page's Meta Business Suite inbox (web). `null` for Instagram,
+   * or when the page id is unknown.
+   *
+   * It opens the INBOX, not the specific thread — and that is a hard limit, not
+   * an oversight. Business Suite selects a thread by the person's real Facebook
+   * user id, which the Messenger Platform never exposes to apps: the
+   * Conversations, User Profile and ID Matching APIs all return only the
+   * page-scoped PSID. An earlier revision of the contract offered
+   * `messenger_thread_id` / `messenger_deep_link` for a direct thread link and
+   * then retracted both for this reason. Do not try to rebuild it.
    */
-  messenger_thread_id: string | null;
-  /**
-   * One-click Meta Business Suite URL. The contract flags this as an
-   * UNOFFICIAL url Meta may reshape without notice — see lib/messenger/link.ts
-   * for the override path.
-   */
-  messenger_deep_link: string | null;
+  messenger_inbox_link: string | null;
 }
 
 export interface ConversationPatch {

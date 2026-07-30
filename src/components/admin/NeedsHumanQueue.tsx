@@ -44,8 +44,6 @@ async function copyToClipboard(text: string, label: string) {
 export function NeedsHumanQueue({
   initialConversations,
   initialError,
-  /** Resolved server-side: threadUrl() reads env, which the browser can't. */
-  initialThreadUrls,
   /**
    * The server's clock at render time. Passed in rather than read with
    * Date.now() during render, which the repo's react-hooks/purity rule rejects.
@@ -54,11 +52,9 @@ export function NeedsHumanQueue({
 }: {
   initialConversations: DentexgoConversation[];
   initialError: string | null;
-  initialThreadUrls: Record<string, string>;
   serverNow: number;
 }) {
   const [rows, setRows] = useState(initialConversations);
-  const [threadUrls, setThreadUrls] = useState(initialThreadUrls);
   const [error, setError] = useState(initialError);
   const [now, setNow] = useState(serverNow);
   // The rows came straight from the server at render time, so the queue is
@@ -91,7 +87,6 @@ export function NeedsHumanQueue({
     }
     setError(null);
     setRows(res.conversations);
-    setThreadUrls(res.threadUrls);
     setLastSync(Date.now());
   }, []);
 
@@ -184,7 +179,6 @@ export function NeedsHumanQueue({
 
       <ul className="mt-3 space-y-2.5">
         {rows.map((c) => {
-          const url = threadUrls[c.id];
           const busy = busyId === c.id;
           return (
             <li
@@ -209,19 +203,25 @@ export function NeedsHumanQueue({
                   <p className="mt-1 text-[11px] text-[#6b7280]">
                     {waitingLabel(c.needs_human_at, now)}
                   </p>
+                  {!c.patient_name && (
+                    <p className="mt-1 text-[10px] text-[#9ca3af]">
+                      Нэр байхгүй — inbox дотор хамгийн сүүлийн зурвасын цагаар
+                      таарууна.
+                    </p>
+                  )}
                   <div className="mt-1.5 flex flex-wrap gap-2">
-                    {c.messenger_thread_id && (
+                    {/* The name is the lookup key: the inbox link opens the
+                        inbox, not the thread, so staff paste this into Business
+                        Suite's search to find the right conversation. */}
+                    {c.patient_name && (
                       <button
                         type="button"
                         onClick={() =>
-                          void copyToClipboard(
-                            c.messenger_thread_id!,
-                            "Thread ID",
-                          )
+                          void copyToClipboard(c.patient_name!, "Нэр")
                         }
                         className="text-[10px] text-[#9ca3af] hover:text-[#6b7280] hover:underline"
                       >
-                        Thread ID хуулах
+                        Нэр хуулах
                       </button>
                     )}
                     <button
@@ -235,14 +235,18 @@ export function NeedsHumanQueue({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {url && (
+                  {/* Opens the Business Suite INBOX, not this thread — Meta
+                      exposes no thread link for a PSID. The label says so, and
+                      the name-copy button above is how staff find the row. */}
+                  {c.messenger_inbox_link && (
                     <a
-                      href={url}
+                      href={c.messenger_inbox_link}
                       target="_blank"
                       rel="noopener noreferrer"
+                      title="Meta Business Suite-ийн inbox нээгдэнэ. Ярианыг өвчтөний нэрээр хайж олно уу."
                       className="inline-flex items-center rounded-full bg-[#0f172a] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b]"
                     >
-                      Messenger дээр хариулах
+                      Inbox нээх
                     </a>
                   )}
                   <button
