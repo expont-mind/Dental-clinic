@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export type SlotDay = {
   key: string;            // "YYYY-MM-DD" UB-local
@@ -20,7 +22,11 @@ type Props = {
   /** IT Doctor dentist id (number) or Supabase doctor id (string) */
   dentistId: number;
   branchId: number;
+  /** Service length in minutes — start cells without enough consecutive free
+   * cells to fit this are hidden, so a long service can't land on a short gap. */
+  durationMin?: number | null;
   serviceName?: string;
+  serviceSlug?: string | null;
   confirmHrefPrefix: string;
   emptyLabel: string;
   lang: string;
@@ -95,7 +101,9 @@ function formatDay(date: Date): string {
 export function SlotPicker({
   dentistId,
   branchId,
+  durationMin,
   serviceName,
+  serviceSlug,
   confirmHrefPrefix,
   emptyLabel,
   lang,
@@ -114,8 +122,9 @@ export function SlotPicker({
       setLoading(true);
       setSlots([]);
       try {
+        const durationParam = durationMin && durationMin > 0 ? `&duration=${durationMin}` : "";
         const res = await fetch(
-          `/api/booking/slots?dentist_id=${dentistId}&date=${date}&branch_id=${branchId}`,
+          `/api/booking/slots?dentist_id=${dentistId}&date=${date}&branch_id=${branchId}${durationParam}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -125,7 +134,7 @@ export function SlotPicker({
         setLoading(false);
       }
     },
-    [dentistId, branchId],
+    [dentistId, branchId, durationMin],
   );
 
   useEffect(() => {
@@ -140,8 +149,13 @@ export function SlotPicker({
     return { id: slotId, time, is_booked: false };
   });
 
+  const activeDate = dates.find((d) => d.key === activeKey)?.date;
+  const activeDateLabel = activeDate
+    ? `${formatWeekday(activeDate, lang)} ${formatDay(activeDate)} ${formatMonth(activeDate, lang)}`
+    : "";
+
   return (
-    <div className="mt-10">
+    <div className="mt-8 sm:mt-10">
       {/* Date strip */}
       <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-2 [scrollbar-width:thin]">
         {dates.map((d) => {
@@ -150,12 +164,13 @@ export function SlotPicker({
             <button
               key={d.key}
               type="button"
+              aria-pressed={active}
               onClick={() => setActiveKey(d.key)}
               className={cn(
-                "flex flex-shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-4 py-3 text-center transition-all min-w-[78px]",
+                "flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border px-4 py-3 text-center transition-all min-w-[76px]",
                 active
                   ? "border-ink bg-ink text-white"
-                  : "border-line bg-surface text-ink-2 hover:border-line-strong",
+                  : "border-line bg-surface text-ink-2 hover:border-line-strong active:bg-surface-2",
               )}
             >
               <span
@@ -184,21 +199,37 @@ export function SlotPicker({
 
       {/* Loading */}
       {loading && (
-        <div className="mt-8 flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div
+          className="mt-8 grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6"
+          aria-hidden
+        >
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Skeleton key={i} className="h-13 rounded-xl" />
+          ))}
         </div>
       )}
 
       {/* No slots */}
       {!loading && displaySlots.length === 0 && (
-        <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface/60 p-10 text-center">
-          <p className="text-muted">{emptyLabel}</p>
-        </div>
+        <EmptyState
+          className="mt-8"
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+          }
+          title={emptyLabel}
+        />
       )}
 
       {/* Slots grid */}
       {!loading && displaySlots.length > 0 && (
-        <div className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+        <div
+          role="group"
+          aria-label={activeDateLabel}
+          className="mt-8 grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6"
+        >
           {displaySlots.map((s) => {
             const isPending = pending === s.id;
             return (
@@ -206,20 +237,26 @@ export function SlotPicker({
                 key={s.id}
                 type="button"
                 disabled={s.is_booked || pending !== null}
+                aria-pressed={isPending}
+                aria-label={`${activeDateLabel} ${s.time}`.trim()}
                 onClick={() => {
                   setPending(s.id);
                   const svcParam = serviceName ? `&service_name=${encodeURIComponent(serviceName)}` : "";
+                  const slugParam = serviceSlug
+                    ? `&service=${encodeURIComponent(serviceSlug)}`
+                    : "";
                   router.push(
-                    `${confirmHrefPrefix}?slot=${encodeURIComponent(s.id)}&branch_id=${branchId}${svcParam}`,
+                    `${confirmHrefPrefix}?slot=${encodeURIComponent(s.id)}&branch_id=${branchId}${svcParam}${slugParam}`,
                   );
                 }}
                 className={cn(
-                  "h-12 rounded-xl border text-sm font-medium transition-all",
+                  "h-13 rounded-xl border text-[15px] font-semibold transition-all",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   s.is_booked &&
                     "cursor-not-allowed border-dashed border-line text-muted-2 line-through",
                   !s.is_booked &&
                     !isPending &&
-                    "border-line bg-surface text-ink hover:border-primary hover:bg-primary-soft hover:text-primary-ink",
+                    "border-line bg-surface text-ink hover:border-primary hover:bg-primary-soft hover:text-primary-ink active:scale-[0.97]",
                   isPending && "border-primary bg-primary text-white",
                   pending !== null && !isPending && "opacity-40",
                 )}

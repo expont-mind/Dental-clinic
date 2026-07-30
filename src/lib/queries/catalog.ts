@@ -304,6 +304,27 @@ export async function listFeaturedServicesPublic(): Promise<Service[]> {
   return (data ?? []) as Service[];
 }
 
+/** IDs of active featured services, capped at 8 to match the Dentexgo
+ *  persona.featured_services contract. Used to keep the bot's pinned-list
+ *  in sync with the website's is_featured truth. */
+export async function getFeaturedServiceIds(): Promise<string[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("id")
+    .eq("is_active", true)
+    .eq("is_featured", true)
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(8);
+  if (error) {
+    console.error("[featured] getFeaturedServiceIds failed:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => (r as { id: string }).id);
+}
+
 /** Returns active top-level parents with their active children attached.
  * One round-trip to Supabase (two queries running in parallel) so the
  * /services page can render the full catalog tree without N+1 fetches. */
@@ -353,6 +374,59 @@ export async function listChildServices(parentId: string): Promise<Service[]> {
     .select("*")
     .eq("parent_id", parentId)
     .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Service[];
+}
+
+/** Parents shown in the booking flow. A parent is "bookable" if it
+ * has its own itdoctor_service_id (it acts as a leaf bookable service)
+ * OR if it has at least one active child with an itdoctor_service_id.
+ * Used only by /book; the /services info catalog still shows everything. */
+export async function listBookableParentServicesPublic(): Promise<Service[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const [{ data: parents, error: pErr }, { data: bookableChildren, error: cErr }] =
+    await Promise.all([
+      supabase
+        .from("services")
+        .select("*")
+        .eq("is_active", true)
+        .is("parent_id", null)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("services")
+        .select("parent_id")
+        .eq("is_active", true)
+        .eq("is_bookable", true)
+        .not("parent_id", "is", null),
+    ]);
+  if (pErr) throw pErr;
+  if (cErr) throw cErr;
+
+  const parentIdsWithBookableChild = new Set(
+    ((bookableChildren ?? []) as { parent_id: string | null }[])
+      .map((r) => r.parent_id)
+      .filter((v): v is string => v != null),
+  );
+
+  // A top-level row appears in the booking entry if it's itself bookable
+  // (a top-level leaf) or it's a category with at least one bookable child.
+  return ((parents ?? []) as Service[]).filter(
+    (p) => p.is_bookable || parentIdsWithBookableChild.has(p.id),
+  );
+}
+
+/** Bookable children under a parent: requires is_bookable. */
+export async function listBookableChildServices(parentId: string): Promise<Service[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("parent_id", parentId)
+    .eq("is_active", true)
+    .eq("is_bookable", true)
     .order("sort_order", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Service[];

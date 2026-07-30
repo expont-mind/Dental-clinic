@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { assertAdmin, isSupabaseConfigured } from "@/lib/auth";
 import { translateError } from "@/lib/utils/translate-error";
 
 export type DepartmentFormState = {
@@ -56,6 +56,8 @@ export async function createDepartmentAction(
   _prev: DepartmentFormState,
   formData: FormData,
 ): Promise<DepartmentFormState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured()) return { error: "Supabase холбогдоогүй байна." };
   const values = readFields(formData);
   const err = validate(values);
@@ -98,6 +100,8 @@ export async function updateDepartmentAction(
   _prev: DepartmentFormState,
   formData: FormData,
 ): Promise<DepartmentFormState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured()) return { error: "Supabase холбогдоогүй байна." };
 
   const id = String(formData.get("id") || "").trim();
@@ -135,6 +139,7 @@ export async function updateDepartmentAction(
 }
 
 export async function toggleDepartmentActiveAction(formData: FormData) {
+  if (await assertAdmin()) return;
   if (!isSupabaseConfigured()) return;
   const id = String(formData.get("id") || "").trim();
   const next = formData.get("active") === "true";
@@ -151,6 +156,8 @@ export async function toggleDepartmentActiveAction(formData: FormData) {
 export async function deleteDepartmentAction(
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured()) return { error: "Supabase холбогдоогүй байна." };
   const id = String(formData.get("id") || "").trim();
   if (!id) return { error: "ID шаардлагатай." };

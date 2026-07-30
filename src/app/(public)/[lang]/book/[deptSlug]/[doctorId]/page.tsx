@@ -1,11 +1,11 @@
-import Image from "next/image";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
-import { getDepartmentBySlug } from "@/lib/queries/catalog";
-import { getDentists, getBranches } from "@/lib/itdoctor/client";
+import { getDepartmentBySlug, getServiceBySlugPublic } from "@/lib/queries/catalog";
+import { getDentists, getBranches, resolveDentistBranch } from "@/lib/itdoctor/client";
 import { listDoctorsByITDoctorIds } from "@/lib/queries/admin";
-import { StepIndicator } from "@/components/booking/StepIndicator";
+import { serviceMeta } from "@/lib/utils/service-format";
+import { BookingStepHeader } from "@/components/booking/BookingStepHeader";
+import { BookingSummary } from "@/components/booking/BookingSummary";
 import { SlotPicker } from "@/components/booking/SlotPicker";
 
 export default async function BookPickSlotPage({
@@ -13,15 +13,36 @@ export default async function BookPickSlotPage({
   searchParams,
 }: {
   params: Promise<{ lang: string; deptSlug: string; doctorId: string }>;
-  searchParams: Promise<{ service_id?: string; service_name?: string; note?: string }>;
+  searchParams: Promise<{ service?: string; service_id?: string; service_name?: string; note?: string }>;
 }) {
   const { lang, deptSlug, doctorId } = await params;
-  const { service_id: serviceId, service_name: serviceName, note: prefillNote } = await searchParams;
+  const { service: childServiceSlug, service_name: serviceName, note: prefillNote } = await searchParams;
   if (!hasLocale(lang)) notFound();
+
+  // "Any doctor" was retired — every booking must target a specific dentist
+  // so the ghost chain stays pinned to one person. Old deep-links with
+  // doctorId=0 redirect back to the doctor picker preserving service params.
+  if (doctorId === "0") {
+    const qs = new URLSearchParams();
+    if (childServiceSlug) qs.set("service", childServiceSlug);
+    if (serviceName) qs.set("service_name", serviceName);
+    if (prefillNote) qs.set("note", prefillNote);
+    const tail = qs.toString() ? `?${qs.toString()}` : "";
+    redirect(`/${lang}/book/${deptSlug}${tail}`);
+  }
+
   const dict = await getDictionary(lang);
 
-  // Try service slug first, fall back to department
-  const service = await import("@/lib/queries/catalog").then(m => m.getServiceBySlugPublic(deptSlug)).catch(() => null);
+  // Prefer the child service slug carried through the booking flow — that's
+  // where duration_min / is_multi_visit actually live, and the slot picker
+  // needs the real duration to hide starts that can't fit the full window.
+  // Fall back to the dept-slug lookup so older links still resolve. MUST match
+  // the confirm page's resolution, or the picker filters on the wrong duration
+  // and offers slots the booking then rejects.
+  const service =
+    (childServiceSlug
+      ? await getServiceBySlugPublic(childServiceSlug).catch(() => null)
+      : null) ?? (await getServiceBySlugPublic(deptSlug).catch(() => null));
   const dept = service ? null : await getDepartmentBySlug(deptSlug);
   if (!service && !dept) notFound();
 
@@ -36,9 +57,15 @@ export default async function BookPickSlotPage({
     itDentistId = numId;
   }
 
+  // Ask iDoctor which branch this dentist actually works at. Falls back to
+  // the first branch (or hardcoded 1) so the slot picker never sees 0.
   try {
-    const branches = await getBranches();
-    if (branches.length > 0) itBranchId = branches[0].id;
+    if (itDentistId > 0) {
+      itBranchId = await resolveDentistBranch(itDentistId);
+    } else {
+      const branches = await getBranches();
+      if (branches.length > 0) itBranchId = branches[0].id;
+    }
   } catch {
     // Use default
   }
@@ -82,86 +109,49 @@ export default async function BookPickSlotPage({
     name = lang === "mn" ? "Дурын эмч" : "Any doctor";
   }
 
+  const { priceLabel, durationLabel } = serviceMeta(service, lang);
+
   return (
     <>
-      {/* Hero + step bar */}
-      <section className="relative overflow-hidden bg-primary-soft">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/40 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl"
-        />
-
-        <StepIndicator
-          variant="onSoft"
-          current={3}
-          stepWord={dict.booking.step}
-          ofWord={dict.booking.of}
-          labels={[
-            dict.nav.services,
-            dict.nav.doctors,
-            dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
-            dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
-          ]}
-        />
-
-        <div className="relative mx-auto max-w-3xl px-5 pt-10 pb-14 text-center sm:px-8 sm:pt-12 sm:pb-16">
-          <Link
-            href={`/${lang}/book/${deptSlug}`}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:text-ink"
-          >
-            ← {dict.common.back}
-          </Link>
-          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
-            ◦ {displayName}
-          </p>
-          <h1 className="mt-2 text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
-            {dict.booking.step_slot_title}
-          </h1>
-          <p className="mx-auto mt-4 max-w-md text-[14px] leading-7 text-muted sm:text-[15px]">
-            {dict.booking.step_slot_lede}
-          </p>
-        </div>
-      </section>
+      <BookingStepHeader
+        current={3}
+        stepWord={dict.booking.step}
+        ofWord={dict.booking.of}
+        labels={[
+          dict.nav.services,
+          dict.nav.doctors,
+          dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
+          dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
+        ]}
+        backHref={`/${lang}/book/${deptSlug}`}
+        backLabel={dict.common.back}
+        eyebrow={displayName}
+        title={dict.booking.step_slot_title}
+        lede={dict.booking.step_slot_lede}
+      />
 
       {/* Doctor summary + slot picker */}
       <section className="mx-auto max-w-4xl px-5 pb-20 pt-10 sm:px-8 sm:pb-28 sm:pt-12">
-        <div className="flex items-center gap-4 rounded-[20px] bg-surface p-4 ring-1 ring-line shadow-[0_8px_20px_-12px_rgba(26,132,120,0.18)]">
-          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-primary-soft">
-            {photoUrl ? (
-              <Image
-                src={photoUrl}
-                alt={name}
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center font-display text-2xl text-muted-2">
-                {name.charAt(0)}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-              {displayName}
-            </p>
-            <p className="font-display mt-0.5 truncate text-[18px] font-bold leading-tight text-ink">
-              {name}
-            </p>
-            {title && (
-              <p className="mt-0.5 truncate text-[12px] text-muted">{title}</p>
-            )}
-          </div>
-        </div>
+        <BookingSummary
+          serviceLabel={displayName}
+          doctorName={name}
+          doctorTitle={title}
+          photoUrl={photoUrl}
+          durationLabel={durationLabel}
+          priceLabel={priceLabel}
+          labels={{
+            when: dict.booking.summary_when,
+            duration: dict.booking.summary_duration,
+            price: dict.booking.summary_price,
+          }}
+        />
 
         <SlotPicker
           dentistId={itDentistId}
           branchId={itBranchId}
+          durationMin={service?.duration_min ?? null}
           serviceName={displayName}
+          serviceSlug={childServiceSlug ?? null}
           confirmHrefPrefix={`/${lang}/book/${deptSlug}/${doctorId}/confirm`}
           emptyLabel={dict.booking.no_slots}
           lang={lang}

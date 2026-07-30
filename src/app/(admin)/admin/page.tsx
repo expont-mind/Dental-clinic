@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireAdminUser } from "@/lib/auth";
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { getAdminBookingStats } from "@/lib/queries/admin";
 
 const STAT_TONES: Record<
   string,
@@ -92,64 +91,21 @@ function StatCard({
 export default async function AdminDashboardPage() {
   const user = await requireAdminUser();
 
-  const today = new Date();
-  const startOfDay = new Date(today);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(today);
-  endOfDay.setHours(23, 59, 59, 999);
-  const inSevenDays = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  let appointmentsToday = 0;
-  let appointmentsWeek = 0;
-  let openSlots = 0;
-  let activeDoctors = 0;
-  let appointmentsMonth = 0;
-  let appointmentsAll = 0;
-
-  if (isSupabaseConfigured()) {
-    try {
-      const supabase = await createSupabaseServer();
-      const [todayRes, weekRes, openRes, doctorsRes, monthRes, allRes] =
-        await Promise.all([
-          supabase
-            .from("appointments")
-            .select("id", { count: "exact", head: true })
-            .gte("created_at", startOfDay.toISOString())
-            .lte("created_at", endOfDay.toISOString()),
-          supabase
-            .from("appointments")
-            .select("id", { count: "exact", head: true })
-            .gte("created_at", startOfDay.toISOString()),
-          supabase
-            .from("time_slots")
-            .select("id", { count: "exact", head: true })
-            .eq("is_booked", false)
-            .gte("slot_start", new Date().toISOString())
-            .lte("slot_start", inSevenDays.toISOString()),
-          supabase
-            .from("doctors")
-            .select("id", { count: "exact", head: true })
-            .eq("is_active", true),
-          supabase
-            .from("appointments")
-            .select("id", { count: "exact", head: true })
-            .gte("created_at", monthStart.toISOString()),
-          supabase
-            .from("appointments")
-            .select("id", { count: "exact", head: true }),
-        ]);
-      appointmentsToday = todayRes.count ?? 0;
-      appointmentsWeek = weekRes.count ?? 0;
-      openSlots = openRes.count ?? 0;
-      activeDoctors = doctorsRes.count ?? 0;
-      appointmentsMonth = monthRes.count ?? 0;
-      appointmentsAll = allRes.count ?? 0;
-    } catch {
-      // dev bypass — supabase not connected; show zeros
-    }
+  let stats = {
+    paidToday: 0,
+    paidWeek: 0,
+    paidMonth: 0,
+    paidAll: 0,
+    awaitingPayment: 0,
+    activeDoctors: 0,
+  };
+  try {
+    stats = await getAdminBookingStats();
+  } catch {
+    // dev bypass / supabase unreachable — show zeros
   }
 
+  const today = new Date();
   const dateLabel = today.toLocaleDateString("mn-MN", {
     year: "numeric",
     month: "2-digit",
@@ -207,37 +163,37 @@ export default async function AdminDashboardPage() {
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
             label="Идэвхтэй эмч"
-            value={activeDoctors}
+            value={stats.activeDoctors}
             tone="violet"
             icon="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M18 3.1a4 4 0 0 1 0 7.8"
           />
           <StatCard
-            label="Чөлөөт цаг (7 хоног)"
-            value={openSlots}
+            label="Хүлээгдэж буй төлбөр"
+            value={stats.awaitingPayment}
             tone="pink"
-            icon="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
+            icon="M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
           />
           <StatCard
             label="Өнөөдрийн захиалга"
-            value={appointmentsToday}
+            value={stats.paidToday}
             tone="blue"
             icon="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"
           />
           <StatCard
             label="Энэ сарын захиалга"
-            value={appointmentsMonth}
+            value={stats.paidMonth}
             tone="green"
             icon="M3 17l6-6 4 4 8-8M14 7h7v7"
           />
           <StatCard
             label="7 хоногийн захиалга"
-            value={appointmentsWeek}
+            value={stats.paidWeek}
             tone="orange"
             icon="M3 7h18M3 12h18M3 17h12"
           />
           <StatCard
             label="Нийт захиалга"
-            value={appointmentsAll}
+            value={stats.paidAll}
             tone="magenta"
             icon="M3 21V8l9-5 9 5v13M9 21V12h6v9"
           />
@@ -246,7 +202,7 @@ export default async function AdminDashboardPage() {
         {/* Bottom quick links */}
         <section className="grid gap-3 lg:grid-cols-2">
           <Link
-            href="/admin/appointments"
+            href="/admin/appointments?status=paid"
             className="group relative overflow-hidden rounded-[16px] bg-white p-5 shadow-[0_8px_20px_-14px_rgba(15,23,42,0.15)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-14px_rgba(12,123,110,0.2)]"
           >
             <div className="flex items-center justify-between">
@@ -258,24 +214,24 @@ export default async function AdminDashboardPage() {
               </span>
             </div>
             <p className="mt-6 text-center text-[12px] text-[#9ca3af]">
-              Захиалгуудын дэлгэрэнгүй жагсаалт
+              Төлөгдсөн захиалгуудын дэлгэрэнгүй жагсаалт
             </p>
           </Link>
 
           <Link
-            href="/admin/slots"
+            href="/admin/appointments?status=pending_any"
             className="group relative overflow-hidden rounded-[16px] bg-white p-5 shadow-[0_8px_20px_-14px_rgba(15,23,42,0.15)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-14px_rgba(236,72,153,0.2)]"
           >
             <div className="flex items-center justify-between">
               <h3 className="font-display text-[15px] font-extrabold text-[#0f172a]">
-                Өнөөдөр болох захиалга
+                Хүлээгдэж буй төлбөр
               </h3>
               <span className="text-[12px] font-bold text-[#ec4899] group-hover:translate-x-0.5 transition-transform">
                 Харах →
               </span>
             </div>
             <p className="mt-6 text-center text-[12px] text-[#9ca3af]">
-              Нийт {appointmentsToday} захиалга
+              Нийт {stats.awaitingPayment} захиалга
             </p>
           </Link>
         </section>

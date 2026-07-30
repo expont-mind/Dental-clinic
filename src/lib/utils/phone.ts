@@ -16,3 +16,21 @@ export function formatMongolianPhone(value: string): string {
   if (!normalized) return value;
   return `+976 ${normalized.slice(4, 8)} ${normalized.slice(8)}`;
 }
+
+/** The bare 8 digits, e.g. "88112233" — the form stored in pending_bookings. */
+export function phoneToDigits8(value: string): string | null {
+  const normalized = normalizeMongolianPhone(value);
+  return normalized ? normalized.slice(4) : null;
+}
+
+/**
+ * Map a phone number to the synthetic email used as its Supabase Auth identity.
+ * Customers log in with phone + password; under the hood we key the account on
+ * `<8 digits>@phone.dentaris.mn`. No mail is ever sent to this address — it only
+ * exists so we can reuse Supabase's email+password auth without an SMS provider.
+ * A real-looking domain is used because Supabase rejects `.local` as invalid.
+ */
+export function phoneToAuthEmail(value: string): string | null {
+  const digits = phoneToDigits8(value);
+  return digits ? `${digits}@phone.dentaris.mn` : null;
+}

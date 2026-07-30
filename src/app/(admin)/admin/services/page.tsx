@@ -25,7 +25,8 @@ export default async function AdminServicesPage() {
     price_cents: s.price_cents,
     duration_min: s.duration_min,
     is_active: s.is_active,
-    itdoctor_service_id: s.itdoctor_service_id ?? null,
+    is_featured: s.is_featured ?? false,
+    is_bookable: s.is_bookable ?? true,
   }));
 
   return (

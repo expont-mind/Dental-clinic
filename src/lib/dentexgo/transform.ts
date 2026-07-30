@@ -8,18 +8,24 @@ import type {
 import { getSiteUrl } from "./constants";
 
 type Bilingual = { mn: string; en: string };
-type BilingualNullable = { mn: string | null; en: string | null };
 
-function bilingualNullable(mn: string | null, en: string | null): BilingualNullable | null {
-  if (mn == null && en == null) return null;
-  return { mn, en };
+// Bilingual envelope helper. When one locale is missing, mirror the present
+// locale into the empty side so Dentexgo's zod schema (which requires both
+// keys to be non-null strings) accepts the payload. Per the integration
+// contract §"Bilingual fields": mirror when only one locale exists.
+function bilingual(mn: string | null, en: string | null): Bilingual | null {
+  const m = mn?.trim() || null;
+  const e = en?.trim() || null;
+  if (!m && !e) return null;
+  return { mn: m ?? e!, en: e ?? m! };
 }
 
-function bookingUrlFor(deptSlug: string): Bilingual {
+function serviceBookingUrl(serviceSlug: string): Bilingual {
   const site = getSiteUrl().replace(/\/$/, "");
+  const slug = encodeURIComponent(serviceSlug);
   return {
-    mn: `${site}/mn/book/${deptSlug}`,
-    en: `${site}/en/book/${deptSlug}`,
+    mn: `${site}/mn/services/${slug}`,
+    en: `${site}/en/services/${slug}`,
   };
 }
 
@@ -30,9 +36,9 @@ export function transformClinic(row: ClinicProfile) {
     locale: "mn" as const,
     timezone: row.timezone,
     hours: row.hours,
-    address: bilingualNullable(row.address_mn, row.address_en),
+    address: bilingual(row.address_mn, row.address_en),
     phone: row.phone,
-    insurance: bilingualNullable(row.insurance_mn, row.insurance_en),
+    insurance: bilingual(row.insurance_mn, row.insurance_en),
     updatedAt: row.updated_at,
   };
 }
@@ -42,7 +48,7 @@ export function transformBranch(row: Branch) {
     id: row.id,
     slug: row.slug,
     name: { mn: row.name_mn, en: row.name_en } satisfies Bilingual,
-    address: bilingualNullable(row.address_mn, row.address_en),
+    address: bilingual(row.address_mn, row.address_en),
     phone: row.phone,
     hours: row.hours,
     timezone: row.timezone,
@@ -59,12 +65,15 @@ export function transformService(
     id: row.id,
     slug: row.slug,
     name: { mn: row.name_mn, en: row.name_en } satisfies Bilingual,
-    description: bilingualNullable(row.description_mn, row.description_en),
+    description: bilingual(row.description_mn, row.description_en),
     category: row.category,
     priceCents: row.price_cents,
     currency: row.currency,
-    durationMin: row.duration_min,
-    bookingUrl: bookingUrlFor(row.department.slug),
+    // Respect the per-service opt-in: if the admin hasn't marked this
+    // service as duration-displayable, hide it from the bot too — even when
+    // the global persona.show_duration_in_cards toggle is on.
+    durationMin: row.show_duration ? row.duration_min : null,
+    bookingUrl: serviceBookingUrl(row.slug),
     branchIds,
     isActive: row.is_active,
     updatedAt: row.updated_at,
@@ -80,10 +89,10 @@ export function transformStaff(
   return {
     id: row.id,
     name: { mn: row.name_mn, en: row.name_en } satisfies Bilingual,
-    role: bilingualNullable(row.title_mn, row.title_en),
+    role: bilingual(row.title_mn, row.title_en),
     specialties: row.department?.slug ? [row.department.slug] : [],
     languages: [] as string[],
-    bio: bilingualNullable(row.bio_mn, row.bio_en),
+    bio: bilingual(row.bio_mn, row.bio_en),
     photoUrl: row.photo_url,
     branchIds,
     isActive: row.is_active,

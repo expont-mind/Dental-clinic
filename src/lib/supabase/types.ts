@@ -102,6 +102,9 @@ export interface Service {
   content_en: ServiceContentBlock;
   is_active: boolean;
   is_featured: boolean;
+  is_bookable: boolean;
+  show_duration: boolean;
+  is_multi_visit: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -153,7 +156,7 @@ export interface ClinicProfile {
   updated_at: string;
 }
 
-export type PendingBookingStatus = "pending" | "processing" | "paid" | "expired" | "failed";
+export type PendingBookingStatus = "pending" | "processing" | "paid" | "expired" | "failed" | "cancelled";
 
 export interface PendingBooking {
   id: string;
@@ -172,6 +175,11 @@ export interface PendingBooking {
   status: PendingBookingStatus;
   booking_reference: string | null;
   booking_result: Record<string, unknown> | null;
+  qr_image: string | null;
+  duration_min: number | null;
+  ghost_booking_refs: string[] | null;
+  /** Reason the last fulfil attempt failed. Added in migration 31. */
+  last_error: string | null;
   created_at: string;
   expires_at: string;
   paid_at: string | null;

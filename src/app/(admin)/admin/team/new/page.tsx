@@ -69,6 +69,10 @@ export default async function AdminTeamNewPage() {
                 id: s.id,
                 name_mn: s.name_mn,
                 name_en: s.name_en,
+                parent_id: s.parent_id ?? null,
+                parent_name_mn:
+                  services.find((p) => p.id === s.parent_id)?.name_mn ?? null,
+                department_name_mn: s.department?.name_mn ?? null,
               }))}
             />
           </div>

@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { headers } from "next/headers";
+import { createSupabaseAdmin, isAdminConfigured } from "@/lib/supabase/admin";
+import { assertAdmin } from "@/lib/auth";
 import {
   isValidMongolianPhone,
   normalizeMongolianPhone,
@@ -29,6 +30,46 @@ function isTableMissing(error: { code?: string; message?: string; hint?: string 
   );
 }
 
+/** Hard cap so one submission can't push a novel into the table. */
+const MAX_MESSAGE_LENGTH = 2000;
+
+/**
+ * Per-instance submission throttle. Serverless means each instance keeps its own
+ * counter, so this thins out floods rather than stopping a determined one — real
+ * rate limiting would need shared state. Good enough to blunt casual spam.
+ */
+const RATE_LIMIT = { windowMs: 60_000, max: 3 };
+const recentSubmissions = new Map<string, number[]>();
+
+async function isRateLimited(): Promise<boolean> {
+  let ip = "unknown";
+  try {
+    const h = await headers();
+    ip =
+      h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      h.get("x-real-ip") ||
+      "unknown";
+  } catch {
+    return false;
+  }
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT.windowMs;
+  const hits = (recentSubmissions.get(ip) ?? []).filter((t) => t > cutoff);
+  if (hits.length >= RATE_LIMIT.max) {
+    recentSubmissions.set(ip, hits);
+    return true;
+  }
+  hits.push(now);
+  recentSubmissions.set(ip, hits);
+  // Keep the map from growing without bound on a long-lived instance.
+  if (recentSubmissions.size > 5000) {
+    for (const [key, times] of recentSubmissions) {
+      if (times.every((t) => t <= cutoff)) recentSubmissions.delete(key);
+    }
+  }
+  return false;
+}
+
 export async function submitFeedbackAction(
   _prev: FeedbackFormState,
   formData: FormData,
@@ -42,43 +83,58 @@ export async function submitFeedbackAction(
   if (!message) {
     return { status: "error", errorKey: "message_required", values };
   }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return { status: "error", errorKey: "message_too_long", values };
+  }
   if (phoneRaw && !isValidMongolianPhone(phoneRaw)) {
     return { status: "error", errorKey: "phone_invalid", values };
   }
+  if (await isRateLimited()) {
+    return { status: "error", errorKey: "too_many_requests", values };
+  }
   const phone = phoneRaw ? normalizeMongolianPhone(phoneRaw) : null;
 
-  // Try Supabase first; fall back to local file store if unavailable or
-  // table is missing so the admin panel still sees submissions in dev/demo.
-  if (isSupabaseConfigured()) {
+  // Insert with the service-role client. The anon client is subject to RLS, and
+  // a missing INSERT policy would silently reject every submission — which used
+  // to fall through to an ephemeral /tmp file and still report success, quietly
+  // losing patient messages.
+  if (isAdminConfigured()) {
     try {
-      const supabase = await createSupabaseServer();
+      const supabase = createSupabaseAdmin();
       const { error } = await supabase.from("feedback").insert({
         name: name || null,
         phone,
         message,
         status: "new",
       });
-      if (!error) {
-        return { status: "success" };
-      }
-      console.warn("[submit_feedback] Supabase insert failed:", {
+      if (!error) return { status: "success" };
+      console.error("[submit_feedback] Supabase insert failed:", {
         code: error.code,
         message: error.message,
         hint: error.hint,
       });
       if (!isTableMissing(error)) {
-        // Persist genuine non-table errors to local store too so submissions
-        // aren't lost, but surface a soft error to the user.
-        await addLocalFeedback({ name: name || null, phone, message });
-        return { status: "success" };
+        // A real database error. Don't claim success — the message would be
+        // stranded in a per-instance temp file the admin panel may never read.
+        return { status: "error", errorKey: "save_failed", values };
       }
-      // Table missing — drop through to local fallback
+      // Table missing — drop through to the local fallback below.
     } catch (err) {
-      console.warn("[submit_feedback] Supabase threw:", err);
+      console.error("[submit_feedback] Supabase threw:", err);
+      return { status: "error", errorKey: "save_failed", values };
     }
   }
 
-  // Local file fallback
+  // Local file fallback — a development convenience only. On Vercel the
+  // filesystem is ephemeral and per-instance, so treat this as a failure in
+  // production rather than telling the patient their message went through.
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "[submit_feedback] no durable store available (feedback table missing?) — " +
+        "refusing to accept the submission",
+    );
+    return { status: "error", errorKey: "save_failed", values };
+  }
   await addLocalFeedback({ name: name || null, phone, message });
   return { status: "success" };
 }
@@ -90,6 +146,9 @@ export async function submitFeedbackAction(
 export async function resolveFeedbackAction(
   formData: FormData,
 ): Promise<{ ok: boolean; error?: string }> {
+  const authErr = await assertAdmin();
+  if (authErr) return { ok: false, error: authErr };
+
   const id = String(formData.get("id") || "").trim();
   if (!id) return { ok: false, error: "Санал олдсонгүй" };
 
@@ -99,9 +158,12 @@ export async function resolveFeedbackAction(
     return { ok };
   }
 
-  if (isSupabaseConfigured()) {
+  // Service-role client: migration 31 enables RLS on `feedback` with no
+  // policies, so the anon client can no longer see or update these rows.
+  // This action is admin-gated above.
+  if (isAdminConfigured()) {
     try {
-      const supabase = await createSupabaseServer();
+      const supabase = createSupabaseAdmin();
       const { error, count } = await supabase
         .from("feedback")
         .update({ status: "resolved" }, { count: "exact" })

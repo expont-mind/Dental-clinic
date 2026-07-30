@@ -11,6 +11,12 @@ type Props = {
   signupLabel: string;
   loginHref: string;
   signupHref: string;
+  lang: string;
+  user: { name: string } | null;
+  accountLabel: string;
+  accountHref: string;
+  logoutLabel: string;
+  signOutAction: (formData: FormData) => void | Promise<void>;
 };
 
 export function MobileMenu({
@@ -19,6 +25,12 @@ export function MobileMenu({
   signupLabel,
   loginHref,
   signupHref,
+  lang,
+  user,
+  accountLabel,
+  accountHref,
+  logoutLabel,
+  signOutAction,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -96,20 +108,43 @@ export function MobileMenu({
               ))}
             </nav>
             <div className="mt-auto grid gap-2 border-t border-line px-5 py-4">
-              <Link
-                href={loginHref}
-                onClick={() => setOpen(false)}
-                className="rounded-full border border-line bg-white py-2.5 text-center text-[13px] font-bold text-ink hover:bg-primary-soft transition-colors"
-              >
-                {loginLabel}
-              </Link>
-              <Link
-                href={signupHref}
-                onClick={() => setOpen(false)}
-                className="rounded-full bg-primary py-2.5 text-center text-[13px] font-bold text-white hover:bg-primary-hover transition-colors"
-              >
-                {signupLabel}
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    href={accountHref}
+                    onClick={() => setOpen(false)}
+                    className="rounded-full bg-primary py-2.5 text-center text-[13px] font-bold text-white hover:bg-primary-hover transition-colors"
+                  >
+                    {accountLabel}
+                  </Link>
+                  <form action={signOutAction} onSubmit={() => setOpen(false)}>
+                    <input type="hidden" name="lang" value={lang} />
+                    <button
+                      type="submit"
+                      className="w-full rounded-full border border-line bg-white py-2.5 text-center text-[13px] font-bold text-ink hover:bg-primary-soft transition-colors"
+                    >
+                      {logoutLabel}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={loginHref}
+                    onClick={() => setOpen(false)}
+                    className="rounded-full border border-line bg-white py-2.5 text-center text-[13px] font-bold text-ink hover:bg-primary-soft transition-colors"
+                  >
+                    {loginLabel}
+                  </Link>
+                  <Link
+                    href={signupHref}
+                    onClick={() => setOpen(false)}
+                    className="rounded-full bg-primary py-2.5 text-center text-[13px] font-bold text-white hover:bg-primary-hover transition-colors"
+                  >
+                    {signupLabel}
+                  </Link>
+                </>
+              )}
             </div>
           </aside>
         </div>

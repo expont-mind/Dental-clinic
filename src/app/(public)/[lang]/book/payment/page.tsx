@@ -1,31 +1,47 @@
 import { notFound } from "next/navigation";
-import { hasLocale, getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, hasLocale, type Locale } from "@/lib/i18n/dictionaries";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { PaymentPoller } from "@/components/booking/PaymentPoller";
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
+import { formatFull } from "@/lib/utils/datetime";
 
 export default async function PaymentPage({
   params,
   searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{
-    id?: string;
-    qr?: string;
-    amount?: string;
-    service?: string;
-  }>;
+  searchParams: Promise<{ id?: string }>;
 }) {
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
-  const dict = await getDictionary(lang);
+  const dict = await getDictionary(lang as Locale);
   const sp = await searchParams;
+  if (!sp.id) notFound();
 
-  if (!sp.id || !sp.qr) notFound();
+  // Load the pending booking server-side so we never need to round-trip the
+  // QR PNG through the URL. URL stays short → no more HTTP 431.
+  const supabase = createSupabaseAdmin();
+  const { data: pending, error } = await supabase
+    .from("pending_bookings")
+    .select("qr_image, amount_cents, service_name, status, slot_datetime, duration_min")
+    .eq("id", sp.id)
+    .maybeSingle();
 
-  const amount = Number(sp.amount || 0);
-  const isMn = lang === "mn";
+  if (error || !pending || !pending.qr_image) notFound();
+
+  const amountMnt = Math.round((pending.amount_cents ?? 0) / 100);
+  const serviceLabel = pending.service_name ?? "";
+  const when = pending.slot_datetime
+    ? formatFull(pending.slot_datetime, lang as Locale)
+    : "";
+  const durationLabel =
+    pending.duration_min && pending.duration_min > 0
+      ? `${pending.duration_min} ${lang === "mn" ? "мин" : "min"}`
+      : "";
 
   return (
-    <div className="mx-auto max-w-lg px-5 py-12 sm:px-8 sm:py-20">
+    <Container size="sm" className="py-12 sm:py-20">
       <div className="text-center">
         <span
           aria-hidden
@@ -37,37 +53,45 @@ export default async function PaymentPage({
           </svg>
         </span>
         <h1 className="font-display mt-5 text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
-          {isMn ? "Төлбөр төлөх" : "Payment"}
+          {dict.booking.pay_title}
         </h1>
-        <p className="mt-2 text-muted">
-          {isMn
-            ? "QPay апп-аар QR кодыг уншуулна уу"
-            : "Scan the QR code with your QPay app"}
-        </p>
+        <p className="mt-2 text-muted">{dict.booking.pay_lede}</p>
       </div>
 
-      {/* Amount badge */}
-      {amount > 0 && (
-        <div className="mt-6 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-5 py-2 text-lg font-bold text-primary">
-            {amount.toLocaleString()}₮
-          </span>
-          {sp.service && (
-            <p className="mt-2 text-[13px] text-muted">{sp.service}</p>
+      {/* What you're paying for */}
+      {(serviceLabel || when) && (
+        <Card variant="muted" className="mt-6 p-5">
+          {serviceLabel && (
+            <p className="font-display text-[16px] font-bold text-ink">
+              {serviceLabel}
+            </p>
           )}
-        </div>
+          {when && <p className="mt-1 text-[13px] text-muted">{when}</p>}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {amountMnt > 0 && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3.5 py-1.5 text-[15px] font-bold text-primary">
+                {amountMnt.toLocaleString()}₮
+              </span>
+            )}
+            {durationLabel && (
+              <span className="inline-flex items-center rounded-full bg-surface-2 px-3 py-1 text-[12px] font-semibold text-ink-2">
+                {durationLabel}
+              </span>
+            )}
+          </div>
+        </Card>
       )}
 
       {/* QR Code */}
-      <div className="mt-8 flex justify-center">
+      <div className="mt-6 flex justify-center">
         <div className="overflow-hidden rounded-3xl border border-line bg-white p-4 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.1)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`data:image/png;base64,${sp.qr}`}
+            src={`data:image/png;base64,${pending.qr_image}`}
             alt="QPay QR Code"
             width={280}
             height={280}
-            className="h-[280px] w-[280px]"
+            className="h-[280px] w-[280px] max-w-full"
           />
         </div>
       </div>
@@ -76,16 +100,17 @@ export default async function PaymentPage({
       <PaymentPoller
         pendingId={sp.id}
         lang={lang}
-        checkingLabel={isMn ? "Төлбөр шалгаж байна..." : "Checking payment..."}
-        expiredLabel={isMn ? "Хугацаа дууссан. Дахин оролдоно уу." : "Payment expired. Please try again."}
-        failedLabel={isMn ? "Алдаа гарлаа. Төлбөр хийгдсэн бол манай утсанд залгана уу." : "Something went wrong. If you paid, please call us."}
+        checkingLabel={dict.booking.pay_checking}
+        expiredLabel={dict.booking.pay_expired}
+        failedLabel={dict.booking.pay_failed}
       />
 
-      <p className="mt-8 text-center text-[12px] text-muted">
-        {isMn
-          ? "15 минутын дотор төлбөрөө хийнэ үү. Хугацаа хэтэрвэл захиалга цуцлагдана."
-          : "Please complete payment within 15 minutes or the booking will be cancelled."}
+      <p className="mt-8 text-center text-[12px] leading-6 text-muted">
+        {dict.booking.pay_deadline}
       </p>
-    </div>
+      <p className="mt-2 text-center text-[12px] leading-6 text-muted-2">
+        {dict.booking.pay_after}
+      </p>
+    </Container>
   );
 }

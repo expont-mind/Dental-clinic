@@ -5,6 +5,7 @@ import { listDepartments } from "@/lib/queries/catalog";
 import { getServiceById, listServicesAdmin } from "@/lib/queries/admin";
 import { listBranchesAdmin, listBranchIdsForService } from "@/lib/queries/branches";
 import { ServiceForm } from "@/components/admin/ServiceForm";
+import { DeleteServiceButton } from "@/components/admin/DeleteServiceButton";
 
 export default async function AdminServiceEditPage({
   params,
@@ -25,6 +26,9 @@ export default async function AdminServiceEditPage({
   const parentOptions = allServices
     .filter((s) => !s.parent_id && s.id !== id)
     .map((s) => ({ id: s.id, name_mn: s.name_mn }));
+  // A service is a "category" if any other row points to it as a parent.
+  // Categories are navigation-only — the form hides booking-related fields.
+  const hasChildren = allServices.some((s) => s.parent_id === id);
   if (!service) notFound();
 
   return (
@@ -38,12 +42,15 @@ export default async function AdminServiceEditPage({
             {service.name_en} · {service.slug}
           </p>
         </div>
-        <Link
-          href="/admin/services"
-          className="text-[12px] font-bold text-[#0f172a] hover:text-primary transition-colors"
-        >
-          ← Жагсаалт
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/services"
+            className="text-[12px] font-bold text-[#0f172a] hover:text-primary transition-colors"
+          >
+            ← Жагсаалт
+          </Link>
+          <DeleteServiceButton id={service.id} name={service.name_mn} />
+        </div>
       </header>
 
       <div className="mx-auto max-w-4xl px-6 py-8 sm:px-10 sm:py-10">
@@ -59,6 +66,7 @@ export default async function AdminServiceEditPage({
               name_en: b.name_en,
             }))}
             parentServices={parentOptions}
+            hasChildren={hasChildren}
             existingBranchIds={branchIds}
             existing={{
               id: service.id,
@@ -82,6 +90,9 @@ export default async function AdminServiceEditPage({
               hero_image_url: service.hero_image_url ?? null,
               is_active: service.is_active,
               is_featured: service.is_featured ?? false,
+              is_bookable: service.is_bookable ?? true,
+              show_duration: service.show_duration ?? false,
+              is_multi_visit: service.is_multi_visit ?? false,
               sort_order: service.sort_order,
               content_mn: service.content_mn ?? null,
               content_en: service.content_en ?? null,

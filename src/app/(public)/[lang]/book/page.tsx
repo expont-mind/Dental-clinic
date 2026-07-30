@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
 import {
-  listActiveServicesPublic,
-  listChildServices,
+  listBookableChildServices,
+  listBookableParentServicesPublic,
 } from "@/lib/queries/catalog";
-import { StepIndicator } from "@/components/booking/StepIndicator";
+import { BookingStepHeader } from "@/components/booking/BookingStepHeader";
 
 const ICON_PATHS: Record<string, string> = {
   implant: "M12 2v10M9 5h6M8 12h8l-1 8a3 3 0 0 1-3 3h-0a3 3 0 0 1-3-3l-1-8z",
@@ -35,12 +35,12 @@ export default async function BookStartPage({
   const dict = await getDictionary(lang);
   const isMn = lang === "mn";
 
-  const services = await listActiveServicesPublic();
+  const services = await listBookableParentServicesPublic();
 
   // Enrich with child count + min price
   const enriched = await Promise.all(
     services.map(async (s) => {
-      const children = await listChildServices(s.id);
+      const children = await listBookableChildServices(s.id);
       const prices = children
         .map((c) => c.price_cents)
         .filter((v): v is number => v != null && v > 0);
@@ -54,41 +54,23 @@ export default async function BookStartPage({
 
   return (
     <>
-      {/* Compact hero + step bar */}
-      <section className="relative overflow-hidden bg-primary-soft">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/40 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl"
-        />
-
-        <StepIndicator
-          variant="onSoft"
-          current={1}
-          stepWord={dict.booking.step}
-          ofWord={dict.booking.of}
-          labels={[
-            dict.nav.services,
-            dict.nav.doctors,
-            dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
-            dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
-          ]}
-        />
-
-        <div className="relative mx-auto max-w-3xl px-5 pt-6 pb-8 text-center sm:px-8 sm:pt-10 sm:pb-12">
-          <h1 className="font-display text-[22px] font-extrabold uppercase leading-[1.15] tracking-tight text-ink sm:text-[28px] lg:text-[36px]">
-            {dict.booking.book_title}
-          </h1>
-          <p className="mx-auto mt-2 max-w-md text-[12.5px] leading-6 text-muted sm:mt-3 sm:text-[13px] lg:text-[14px]">
-            {isMn
-              ? "Үйлчилгээгээ сонгоод цаг захиалаарай"
-              : "Select a service to book your appointment"}
-          </p>
-        </div>
-      </section>
+      <BookingStepHeader
+        current={1}
+        stepWord={dict.booking.step}
+        ofWord={dict.booking.of}
+        labels={[
+          dict.nav.services,
+          dict.nav.doctors,
+          dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
+          dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
+        ]}
+        title={dict.booking.book_title}
+        lede={
+          isMn
+            ? "Үйлчилгээгээ сонгоод цаг захиалаарай"
+            : "Select a service to book your appointment"
+        }
+      />
 
       {/* Compact service list */}
       <section className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-12 lg:py-14">

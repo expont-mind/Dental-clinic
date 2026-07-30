@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { requireAdminUser } from "@/lib/auth";
 import { listDepartments } from "@/lib/queries/catalog";
+import { listServicesAdmin } from "@/lib/queries/admin";
 import { listBranchesAdmin } from "@/lib/queries/branches";
 import { ServiceForm } from "@/components/admin/ServiceForm";
 
 export default async function AdminServiceNewPage() {
   await requireAdminUser();
-  const [departments, branches] = await Promise.all([
+  const [departments, branches, allServices] = await Promise.all([
     listDepartments(),
     listBranchesAdmin(),
+    listServicesAdmin(),
   ]);
+  const parentOptions = allServices
+    .filter((s) => !s.parent_id)
+    .map((s) => ({ id: s.id, name_mn: s.name_mn }));
 
   return (
     <div>
@@ -37,6 +42,7 @@ export default async function AdminServiceNewPage() {
               name_mn: b.name_mn,
               name_en: b.name_en,
             }))}
+            parentServices={parentOptions}
           />
       </div>
     </div>

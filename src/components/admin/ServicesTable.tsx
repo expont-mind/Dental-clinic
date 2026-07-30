@@ -16,10 +16,11 @@ export type AdminServiceRow = {
   price_cents: number | null;
   duration_min: number | null;
   is_active: boolean;
-  itdoctor_service_id: number | null;
+  is_featured: boolean;
+  is_bookable: boolean;
 };
 
-type Filter = "all" | "parent" | "child" | "inactive" | "external";
+type Filter = "all" | "featured" | "inactive" | "external";
 
 type Group = {
   parent: AdminServiceRow;
@@ -33,14 +34,12 @@ function formatMnt(cents: number | null): string {
 
 function rowMatchesFilter(s: AdminServiceRow, filter: Filter): boolean {
   switch (filter) {
-    case "parent":
-      return s.parent_id === null;
-    case "child":
-      return s.parent_id !== null;
+    case "featured":
+      return s.is_featured;
     case "inactive":
       return !s.is_active;
     case "external":
-      return s.itdoctor_service_id != null;
+      return s.is_bookable;
     default:
       return true;
   }
@@ -74,13 +73,16 @@ export function ServicesTable({ rows }: { rows: AdminServiceRow[] }) {
     }));
   }, [rows]);
 
-  // Apply chip + search filters across the tree. A group surfaces if its
-  // parent OR any child matches. When a child filter is active, the parent
-  // header still renders (as a category label) but its own "parent row"
-  // doesn't unless it independently matches.
-  const visible = useMemo(() => {
+  // Apply chip + search filters. Two layouts on the page now:
+  //   - visibleCategories: parents that actually have child services. Header
+  //     is the category name; rows are the children (parent never duplicated).
+  //   - visibleLeaves: top-level rows with NO children. The row IS the
+  //     service. Rendered together in one flat "Дангаар үйлчилгээ" card so
+  //     the page doesn't show empty "Дотроо үйлчилгээгүй" placeholders.
+  const visibleCategories = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     return tree
+      .filter((g) => g.children.length > 0)
       .map((g) => {
         const parentMatches =
           rowMatchesFilter(g.parent, filter) && rowMatchesQuery(g.parent, q);
@@ -92,13 +94,22 @@ export function ServicesTable({ rows }: { rows: AdminServiceRow[] }) {
       .filter((g) => g._showParent || g._children.length > 0);
   }, [tree, filter, query]);
 
+  const visibleLeaves = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase();
+    return tree
+      .filter((g) => g.children.length === 0)
+      .map((g) => g.parent)
+      .filter((p) => rowMatchesFilter(p, filter) && rowMatchesQuery(p, q));
+  }, [tree, filter, query]);
+
+  const hasResults = visibleCategories.length > 0 || visibleLeaves.length > 0;
+
   const counts = useMemo(
     () => ({
       all: rows.length,
-      parent: rows.filter((s) => s.parent_id === null).length,
-      child: rows.filter((s) => s.parent_id !== null).length,
+      featured: rows.filter((s) => s.is_featured).length,
       inactive: rows.filter((s) => !s.is_active).length,
-      external: rows.filter((s) => s.itdoctor_service_id != null).length,
+      external: rows.filter((s) => s.is_bookable).length,
     }),
     [rows],
   );
@@ -113,14 +124,9 @@ export function ServicesTable({ rows }: { rows: AdminServiceRow[] }) {
             onClick={() => setFilter("all")}
           />
           <Chip
-            label={`Эцэг · ${counts.parent}`}
-            active={filter === "parent"}
-            onClick={() => setFilter("parent")}
-          />
-          <Chip
-            label={`Хүүхэд · ${counts.child}`}
-            active={filter === "child"}
-            onClick={() => setFilter("child")}
+            label={`Онцлох · ${counts.featured}`}
+            active={filter === "featured"}
+            onClick={() => setFilter("featured")}
           />
           <Chip
             label={`Идэвхгүй · ${counts.inactive}`}
@@ -159,21 +165,21 @@ export function ServicesTable({ rows }: { rows: AdminServiceRow[] }) {
         </div>
       </div>
 
-      {visible.length === 0 ? (
+      {!hasResults ? (
         <div className="rounded-2xl border border-dashed border-line bg-white p-10 text-center text-[13px] text-[#6b7280]">
           Хайлтад тохирох үйлчилгээ алга.
         </div>
       ) : (
         <div className="space-y-4">
-          {visible.map((g) => (
+          {visibleCategories.map((g) => (
             <CategoryCard
               key={g.parent.id}
               parent={g.parent}
-              showParentRow={g._showParent}
               rows={g._children}
               totalChildren={g.children.length}
             />
           ))}
+          {visibleLeaves.length > 0 && <LeafCard rows={visibleLeaves} />}
         </div>
       )}
     </div>
@@ -183,12 +189,10 @@ export function ServicesTable({ rows }: { rows: AdminServiceRow[] }) {
 function CategoryCard({
   parent,
   rows,
-  showParentRow,
   totalChildren,
 }: {
   parent: AdminServiceRow;
   rows: AdminServiceRow[];
-  showParentRow: boolean;
   totalChildren: number;
 }) {
   return (
@@ -208,9 +212,7 @@ function CategoryCard({
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-semibold text-[#6b7280]">
-            {totalChildren > 0
-              ? `${totalChildren} үйлчилгээ`
-              : "Дотроо үйлчилгээгүй"}
+            {totalChildren} үйлчилгээ
           </span>
           <Link
             href={`/admin/services/${parent.id}`}
@@ -233,11 +235,10 @@ function CategoryCard({
           </tr>
         </thead>
         <tbody className="divide-y divide-line/70">
-          {showParentRow && <Row row={parent} isParent />}
           {rows.map((c) => (
-            <Row key={c.id} row={c} isParent={false} />
+            <Row key={c.id} row={c} />
           ))}
-          {!showParentRow && rows.length === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td
                 colSpan={6}
@@ -253,16 +254,61 @@ function CategoryCard({
   );
 }
 
-function Row({ row, isParent }: { row: AdminServiceRow; isParent: boolean }) {
+/**
+ * Top-level services with no children. Rendered as a single flat table so
+ * we don't show one "empty category" card per row. The "└" prefix in
+ * <Row> is replaced with a bullet to convey "standalone" rather than
+ * "nested under a category".
+ */
+function LeafCard({ rows }: { rows: AdminServiceRow[] }) {
+  return (
+    <section className="overflow-hidden rounded-[22px] bg-white shadow-[0_10px_30px_-18px_rgba(15,23,42,0.18)] ring-1 ring-line">
+      <header className="flex flex-wrap items-baseline justify-between gap-3 border-b border-line bg-[#fafbfc] px-5 py-3.5">
+        <div className="flex items-baseline gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+            Дангаар
+          </span>
+          <h3 className="font-display text-[15px] font-bold tracking-tight text-ink">
+            Бие даасан үйлчилгээ
+          </h3>
+          <span className="text-[11px] text-[#9ca3af]">
+            Дотроо дэд үйлчилгээгүй
+          </span>
+        </div>
+        <span className="text-[11px] font-semibold text-[#6b7280]">
+          {rows.length} үйлчилгээ
+        </span>
+      </header>
+
+      <table className="w-full text-left text-[13px]">
+        <thead className="bg-white text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">
+          <tr>
+            <th className="px-5 py-2.5">Үйлчилгээ</th>
+            <th className="px-5 py-2.5">Тасаг</th>
+            <th className="px-5 py-2.5">Үнэ</th>
+            <th className="px-5 py-2.5">Үргэлжлэл</th>
+            <th className="px-5 py-2.5">Төлөв</th>
+            <th className="px-5 py-2.5 text-right">Үйлдэл</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line/70">
+          {rows.map((r) => (
+            <Row key={r.id} row={r} standalone />
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function Row({ row, standalone = false }: { row: AdminServiceRow; standalone?: boolean }) {
   return (
     <tr className="hover:bg-[#fafbfc]">
       <td className="px-5 py-3">
         <div className="flex items-center gap-2">
-          {!isParent && (
-            <span aria-hidden className="text-[#cbd5e1]">
-              └
-            </span>
-          )}
+          <span aria-hidden className="text-[#cbd5e1]">
+            {standalone ? "•" : "└"}
+          </span>
           <div>
             <div className="font-semibold text-[#0f172a]">{row.name_mn}</div>
             <div className="text-[11px] text-[#6b7280]">
@@ -298,9 +344,9 @@ function Row({ row, isParent }: { row: AdminServiceRow; isParent: boolean }) {
               {row.is_active ? "Идэвхтэй" : "Идэвхгүй"}
             </button>
           </form>
-          {row.itdoctor_service_id != null && (
+          {row.is_bookable && (
             <span
-              title={`Захиалга боломжтой — IT Doctor ID ${row.itdoctor_service_id}`}
+              title="Онлайнаар захиалах боломжтой"
               className="inline-flex items-center rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary-ink"
             >
               Захиалга

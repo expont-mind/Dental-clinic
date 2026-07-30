@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { assertAdmin, isSupabaseConfigured } from "@/lib/auth";
 import { translateError } from "@/lib/utils/translate-error";
 import { emitSync } from "@/lib/dentexgo/webhook";
 
@@ -88,6 +88,8 @@ export async function createDoctorAction(
   _prev: CreateDoctorState,
   formData: FormData,
 ): Promise<CreateDoctorState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   const values: NonNullable<CreateDoctorState["values"]> = {
     department_id: String(formData.get("department_id") || "").trim(),
     name_mn: String(formData.get("name_mn") || "").trim(),
@@ -181,6 +183,8 @@ export type DeleteDoctorState = {
 };
 
 export async function deleteDoctorAction(id: string): Promise<DeleteDoctorState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured()) return { error: "Supabase холбогдоогүй байна." };
   const doctorId = id.trim();
   if (!doctorId) return { error: "ID шаардлагатай." };
@@ -207,6 +211,8 @@ export async function updateDoctorAction(
   _prev: UpdateDoctorState,
   formData: FormData,
 ): Promise<UpdateDoctorState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured())
     return { error: "Supabase холбогдоогүй байна." };
 

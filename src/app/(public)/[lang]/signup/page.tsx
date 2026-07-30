@@ -109,8 +109,6 @@ export default async function SignupPage({
                 dict={{
                   name: dict.auth.name,
                   name_ph: dict.auth.name_ph,
-                  email: dict.auth.email,
-                  email_ph: dict.auth.email_ph,
                   phone: dict.auth.phone,
                   phone_ph: dict.auth.phone_ph,
                   password: dict.auth.password,

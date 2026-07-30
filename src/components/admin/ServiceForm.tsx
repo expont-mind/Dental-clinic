@@ -50,6 +50,9 @@ type Existing = {
   hero_image_url: string | null;
   is_active: boolean;
   is_featured: boolean;
+  is_bookable: boolean;
+  show_duration: boolean;
+  is_multi_visit: boolean;
   sort_order: number;
   content_mn: ServiceContentBlock | null;
   content_en: ServiceContentBlock | null;
@@ -61,12 +64,17 @@ export function ServiceForm({
   parentServices = [],
   existingBranchIds = [],
   existing,
+  hasChildren = false,
 }: {
   departments: DeptOption[];
   branches?: BranchOption[];
   parentServices?: ParentOption[];
   existingBranchIds?: string[];
   existing?: Existing;
+  /** True if this service has at least one child (i.e. it's a category).
+   *  Categories are navigation only — booking-related fields are hidden
+   *  and force-cleared on save. */
+  hasChildren?: boolean;
 }) {
   const isEdit = Boolean(existing);
   const [state, formAction, pending] = useActionState(
@@ -85,6 +93,15 @@ export function ServiceForm({
   return (
     <form action={formAction} className="space-y-5">
       {isEdit && <input type="hidden" name="id" value={existing!.id} />}
+
+      {hasChildren && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-[12px] leading-5 text-sky-900">
+          <strong>Энэ нь дотроо үйлчилгээтэй ангилал.</strong> Захиалга,
+          үргэлжлэх хугацаа, олон ирэлттэй гэх мэт тохиргоо нь доторх
+          үйлчилгээ тус бүрт тохируулагдана. Энд зөвхөн харагдац, нэр,
+          зураг, тайлбар зэрэг ангилалын мэдээллийг засна уу.
+        </div>
+      )}
 
       {/* ──────────────────────────────────────────────────────────────────── */}
       <Section
@@ -231,27 +248,39 @@ export function ServiceForm({
         subtitle="Pricing & duration"
         hint="Тоон утгаас гадна hero дээр текстээр харагдах хувилбарыг бөглөнө үү."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={hasChildren ? "" : "grid gap-4 sm:grid-cols-2"}>
           <Field
             name="price_mnt"
-            label="Үнэ (MNT, тоо)"
+            label="Үнэ (₮)"
             type="number"
             placeholder="50000"
             defaultValue={v.price_mnt ?? initialPriceMnt}
           />
-          <Field
-            name="duration_min"
-            label="Үргэлжлэх (минут, тоо)"
-            type="number"
-            placeholder="30"
-            defaultValue={
-              v.duration_min ?? existing?.duration_min?.toString() ?? ""
-            }
-          />
+          {!hasChildren && (
+            <Field
+              name="duration_min"
+              label="Үргэлжлэх (минут)"
+              type="number"
+              placeholder="30"
+              defaultValue={
+                v.duration_min ?? existing?.duration_min?.toString() ?? ""
+              }
+            />
+          )}
         </div>
-        <p className="-mt-2 text-[11px] text-[#6b7280]">
-          Доорх текстэн талбарууд hero дээр харагдах хувилбар. Хоосон бол дээд
-          талын тоо автоматаар форматлагдан харагдана.
+        <p className="-mt-2 text-[11px] leading-5 text-[#6b7280]">
+          {!hasChildren && (
+            <>
+              Анхны цагт IT Doctor дээр блоклогдох хугацаа — энэ дугаар
+              ghost slot-уудыг үүсгэнэ. Олон ирэлттэй эмчилгээний хувьд
+              зөвхөн анхны үзлэгийн уртыг оруулна уу (жнь: имплантын анхны
+              үзлэг = 30 минут).
+              <br />
+            </>
+          )}
+          Доорх текстэн талбарууд hero дээр харагдах хувилбар. Олон
+          ирэлттэй бол: жнь &quot;2 ирэлт, ~2 цаг&quot;. Хоосон бол
+          дээд талын тоо автоматаар форматлагдана.
         </p>
         <BilingualField
           label="Үнэ — текст (hero дээр харагдах)"
@@ -271,6 +300,29 @@ export function ServiceForm({
           defaultMn={v.duration_text_mn ?? existing?.duration_text_mn ?? ""}
           defaultEn={v.duration_text_en ?? existing?.duration_text_en ?? ""}
         />
+        <label className="flex items-start gap-3 rounded-2xl bg-[#fafbff] p-3">
+          {/* Hidden default ensures the action always receives a value */}
+          <input type="hidden" name="show_duration" value="off" />
+          <input
+            type="checkbox"
+            name="show_duration"
+            defaultChecked={
+              v.show_duration != null
+                ? v.show_duration === "on"
+                : (existing?.show_duration ?? false)
+            }
+            className="mt-0.5 h-4 w-4 rounded border-line text-primary focus:ring-primary"
+          />
+          <span className="text-[13px] font-semibold text-[#374151]">
+            Хугацаа харуулах
+            <span className="ml-1.5 text-[11px] font-normal text-[#6b7280]">
+              — Нийтийн хуудас болон Messenger ботын карусел дээр энэ
+              үйлчилгээний үргэлжлэх хугацааг харуулна. Анхдагч: унтраалттай.
+              Зөвлөмж: тогтмол үргэлжлэх ажилбарт асаа (имплант, цэвэрлэгээ),
+              зөвлөгөө/багц/олон ирэлттэй эмчилгээнд унтраалттай орхи.
+            </span>
+          </span>
+        </label>
       </Section>
 
       {/* ──────────────────────────────────────────────────────────────────── */}
@@ -293,33 +345,53 @@ export function ServiceForm({
         subtitle="Settings"
         hint="Захиалга, харагдац, салбар."
       >
-        <input
-          type="hidden"
-          name="existing_itdoctor_service_id"
-          value={existing?.itdoctor_service_id?.toString() ?? ""}
-        />
+        {!hasChildren && (
+          <>
+            <label className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                name="is_bookable"
+                defaultChecked={
+                  v.is_bookable != null
+                    ? v.is_bookable === "on"
+                    : (existing?.is_bookable ?? true)
+                }
+                className="mt-0.5 h-4 w-4 rounded border-line text-primary focus:ring-primary"
+              />
+              <span className="text-[13px] font-semibold text-[#374151]">
+                Захиалга боломжтой
+                <span className="ml-1.5 font-normal text-[11px] text-[#6b7280]">
+                  — Үйлчлүүлэгч энэ үйлчилгээгээр онлайнаар цаг захиалж болно.
+                  IT Doctor дээр Эмчилгээ/Үзлэг үйлчилгээгээр автоматаар
+                  захиалагдана.
+                </span>
+              </span>
+            </label>
 
-        <label className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            name="is_bookable"
-            defaultChecked={
-              v.is_bookable != null
-                ? v.is_bookable === "on"
-                : existing
-                  ? existing.itdoctor_service_id != null
-                  : true
-            }
-            className="mt-0.5 h-4 w-4 rounded border-line text-primary focus:ring-primary"
-          />
-          <span className="text-[13px] font-semibold text-[#374151]">
-            Захиалга боломжтой
-            <span className="ml-1.5 font-normal text-[11px] text-[#6b7280]">
-              — Үйлчлүүлэгч энэ үйлчилгээгээр онлайнаар цаг захиалж болно. IT
-              Doctor холболт автоматаар тохируулагдана.
-            </span>
-          </span>
-        </label>
+            <label className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                name="is_multi_visit"
+                defaultChecked={
+                  v.is_multi_visit != null
+                    ? v.is_multi_visit === "on"
+                    : (existing?.is_multi_visit ?? false)
+                }
+                className="mt-0.5 h-4 w-4 rounded border-line text-primary focus:ring-primary"
+              />
+              <span className="text-[13px] font-semibold text-[#374151]">
+                Олон ирэлттэй эмчилгээ (анхны үзлэг)
+                <span className="ml-1.5 font-normal text-[11px] text-[#6b7280]">
+                  — Жнь: имплант, шүдний хүрд, томоохон үйлчилгээ. Эхний цаг
+                  анхны үзлэг болж, эмчилгээний цагыг эмч уулзалт дээр товлоно.
+                  IT Doctor дээр &quot;Үзлэг 1&quot; үйлчилгээгээр захиалагдана.
+                  Захиалгын урт нь дээрх &quot;Үргэлжлэх (минут)&quot;-аас
+                  тооцоологдоно — зөвхөн анхны үзлэгийн уртыг оруулна уу.
+                </span>
+              </span>
+            </label>
+          </>
+        )}
 
         <label className="flex items-start gap-3">
           <input

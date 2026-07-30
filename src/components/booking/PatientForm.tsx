@@ -16,12 +16,19 @@ type Props = {
   doctorId: string;
   branchId: number;
   serviceName: string;
+  /** Mongolian service name for the iDoctor note (reception reads Mongolian). */
+  serviceNameMn: string;
+  isMultiVisit: boolean;
+  durationMin: number | null;
+  /** Prefill for a logged-in customer so their booking is stored under their phone. */
+  defaultName?: string;
+  defaultPhone?: string;
   dict: Dictionary;
 };
 
 const initial: BookingFormState = { status: "idle" };
 
-export function PatientForm({ lang, slotId, deptSlug, doctorId, branchId, serviceName, dict }: Props) {
+export function PatientForm({ lang, slotId, deptSlug, doctorId, branchId, serviceName, serviceNameMn, isMultiVisit, durationMin, defaultName, defaultPhone, dict }: Props) {
   const [state, formAction, pending] = useActionState(
     bookSlotAction,
     initial,
@@ -42,12 +49,19 @@ export function PatientForm({ lang, slotId, deptSlug, doctorId, branchId, servic
       <input type="hidden" name="doctor_id" value={doctorId} />
       <input type="hidden" name="branch_id" value={branchId} />
       <input type="hidden" name="service_name" value={serviceName} />
+      <input type="hidden" name="service_name_mn" value={serviceNameMn} />
+      {isMultiVisit && (
+        <input type="hidden" name="is_multi_visit" value="on" />
+      )}
+      {durationMin != null && durationMin > 0 && (
+        <input type="hidden" name="duration_min" value={durationMin} />
+      )}
 
       <Input
         name="name"
         label={dict.booking.field_name}
         placeholder={dict.booking.field_name_ph}
-        defaultValue={state.values?.name ?? ""}
+        defaultValue={state.values?.name ?? defaultName ?? ""}
         autoComplete="name"
         required
       />
@@ -57,7 +71,7 @@ export function PatientForm({ lang, slotId, deptSlug, doctorId, branchId, servic
         label={dict.booking.field_phone}
         placeholder={dict.booking.field_phone_ph}
         hint={dict.booking.field_phone_hint}
-        defaultValue={state.values?.phone ?? ""}
+        defaultValue={state.values?.phone ?? defaultPhone ?? ""}
         autoComplete="tel"
         required
       />
@@ -89,8 +103,13 @@ export function PatientForm({ lang, slotId, deptSlug, doctorId, branchId, servic
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
-        <Button type="submit" size="lg" disabled={pending}>
+      <div className="pt-2">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={pending}
+          className="w-full sm:w-auto"
+        >
           {pending ? dict.booking.submitting : dict.booking.submit}
         </Button>
       </div>

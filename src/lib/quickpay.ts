@@ -10,11 +10,16 @@ type InvoiceResult = {
 };
 
 type PaymentCheckResult = {
-  invoice_id: string;
-  payment_status: string;
-  payment_amount: number;
-  payment_date: string;
-  rows: { payment_status: string }[];
+  id: string;
+  invoice_status: string;
+  invoice_status_date?: string;
+  payments?: Array<{
+    id: string;
+    amount: string;
+    currency: string;
+    payment_status: string;
+    payment_status_date?: string;
+  }>;
 };
 
 class QuickPayService {

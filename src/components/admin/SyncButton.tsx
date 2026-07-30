@@ -15,8 +15,11 @@ export function SyncButton() {
     try {
       const r = await syncFromITDoctorAction();
       if (r.ok) {
+        const names = r.deactivatedNames?.length
+          ? ` (${r.deactivatedNames.join(", ")})`
+          : "";
         setResult(
-          `Sync амжилттай! Эмч: ${r.dentistsSynced}, Үйлчилгээ: ${r.servicesSynced}, Идэвхгүй болгосон: ${r.deactivated}`,
+          `Sync амжилттай! Эмч: ${r.dentistsSynced}, Үйлчилгээ: ${r.servicesSynced}, Идэвхгүй болгосон: ${r.deactivated}${names}`,
         );
         router.refresh();
       } else {

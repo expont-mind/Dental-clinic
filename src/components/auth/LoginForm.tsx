@@ -14,19 +14,19 @@ export function LoginForm({ lang, dict }: { lang: string; dict: AuthDict }) {
 
       <div>
         <label
-          htmlFor="email"
+          htmlFor="phone"
           className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.18em] text-muted"
         >
-          {dict.email}
+          {dict.phone}
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
+          id="phone"
+          name="phone"
+          type="tel"
           required
-          autoComplete="email"
-          placeholder={dict.email_ph}
-          defaultValue={state.values?.email}
+          autoComplete="tel"
+          placeholder={dict.phone_ph}
+          defaultValue={state.values?.phone}
           className="w-full rounded-2xl border border-line bg-surface px-5 py-3.5 text-[14px] text-ink placeholder:text-muted-2 outline-none focus:border-primary"
         />
       </div>
@@ -78,8 +78,8 @@ export function LoginForm({ lang, dict }: { lang: string; dict: AuthDict }) {
 }
 
 type AuthDict = {
-  email: string;
-  email_ph: string;
+  phone: string;
+  phone_ph: string;
   password: string;
   password_ph: string;
   forgot: string;

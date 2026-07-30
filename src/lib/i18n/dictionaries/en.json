@@ -63,6 +63,7 @@
     "why_trust_eyebrow": "Why patients trust us",
     "why_trust_title": "Why patients trust us with their care",
     "why_trust_lede": "We create experiences that make you feel cared for, confident and comfortable. Our commitment to excellence, advanced technology, and personalized treatment plans set us apart.",
+    "why_trust_lede2": "Our clinic is built on digital solutions and equipped with internationally certified modern technology and diagnostic systems, offering each patient a precise, personalized treatment plan.",
     "why_trust_items": [
       "Cosmetic dentistry, orthodontics and oral surgery.",
       "Skilled dentists and specialists for personalized care.",
@@ -73,18 +74,9 @@
     "care_title": "Committed to Your Care",
     "care_lede": "We don't just treat teeth — we build trust. Every interaction is designed to feel simple, calm and transparent.",
     "care_cards": [
-      {
-        "title": "Insurance Support",
-        "body": "Flexible payment options compatible with private and employer insurance."
-      },
-      {
-        "title": "Expert Dentists",
-        "body": "10+ years of experience and internationally trained specialists."
-      },
-      {
-        "title": "Pain-free Experience",
-        "body": "Modern anesthesia and a calm environment — your comfort comes first."
-      }
+      { "title": "Insurance Support", "body": "Flexible payment options compatible with private and employer insurance." },
+      { "title": "Expert Dentists", "body": "10+ years of experience and internationally trained specialists." },
+      { "title": "Pain-free Experience", "body": "Modern anesthesia and a calm environment — your comfort comes first." }
     ],
     "stats_eyebrow": "By the numbers",
     "stats_title": "Backed by trust",
@@ -98,41 +90,17 @@
     "process_title": "Book a visit in just 3 steps",
     "process_lede": "Simple, fast, transparent. No phone tag, no email required.",
     "process_steps": [
-      {
-        "step": "01",
-        "title": "Pick your service",
-        "body": "From family check-ups to implants — choose the area you need."
-      },
-      {
-        "step": "02",
-        "title": "Choose a doctor & time",
-        "body": "Pick from available dentists and open time slots that fit your schedule."
-      },
-      {
-        "step": "03",
-        "title": "Confirm and visit",
-        "body": "Drop your name and phone — your appointment is locked in. We send an SMS reminder."
-      }
+      { "step": "01", "title": "Pick your service", "body": "From family check-ups to implants — choose the area you need." },
+      { "step": "02", "title": "Choose a doctor & time", "body": "Pick from available dentists and open time slots that fit your schedule." },
+      { "step": "03", "title": "Confirm and visit", "body": "Drop your name and phone — your appointment is locked in. We send an SMS reminder." }
     ],
     "testimonial_eyebrow": "Reviews",
     "testimonial_title": "What patients say",
     "testimonial_lede": "Real reactions from patients who walked through our doors.",
     "testimonials": [
-      {
-        "quote": "I used to be terrified of the dentist. Dentaris changed that. The dentist explained every step, and the treatment was completely painless. I love smiling again.",
-        "name": "B. Enkhjargal",
-        "role": "Student"
-      },
-      {
-        "quote": "Brought my kid in — they were so warm and patient. He thought he was playing the whole time and got his check-up done. He actually wants to go back!",
-        "name": "S. Tuya",
-        "role": "Mother"
-      },
-      {
-        "quote": "Got an implant. Three months later — feels like my own tooth. Honest pricing, real care. Highly recommend.",
-        "name": "D. Batbayar",
-        "role": "Business owner"
-      }
+      { "quote": "I used to be terrified of the dentist. Dentaris changed that. The dentist explained every step, and the treatment was completely painless. I love smiling again.", "name": "B. Enkhjargal", "role": "Student" },
+      { "quote": "Brought my kid in — they were so warm and patient. He thought he was playing the whole time and got his check-up done. He actually wants to go back!", "name": "S. Tuya", "role": "Mother" },
+      { "quote": "Got an implant. Three months later — feels like my own tooth. Honest pricing, real care. Highly recommend.", "name": "D. Batbayar", "role": "Business owner" }
     ],
     "doctors_eyebrow": "Our team",
     "doctors_title": "Skilled Hands with Caring Hearts",
@@ -300,13 +268,7 @@
     "locations_eyebrow": "Our location",
     "locations_title": "",
     "locations": [
-      {
-        "image": "/location2.jpg",
-        "tag": "Branch 1",
-        "name": "Central Post branch",
-        "address": "Right of the Central Post Office on Sukhbaatar Square, Express Tower red office building, 1st floor",
-        "phone": "+976 7700 0022"
-      }
+      { "image": "/location2.jpg", "tag": "Branch 1", "name": "Central Post branch", "address": "Right of the Central Post Office on Sukhbaatar Square, Express Tower red office building, 1st floor", "phone": "+976 7700 0022" }
     ],
     "featured_eyebrow": "Featured",
     "featured_title": "Current promotions & special offers",
@@ -344,6 +306,7 @@
     "see_more": "Learn more",
     "starting_from_label": "Price",
     "duration_label": "Duration",
+    "total_treatment_label": "Total treatment",
     "treatments_title": "Treatments included",
     "pricing_title": "Price list",
     "benefits_title": "Why we're different",
@@ -428,6 +391,9 @@
       "phone_invalid": "Phone number is invalid (+976 + 8 digits).",
       "not_configured": "Service is not configured. Please contact admin.",
       "table_missing": "Feedback table is not set up yet.",
+      "message_too_long": "Your message is too long (keep it under 2000 characters).",
+      "too_many_requests": "Too many submissions. Please try again in a minute.",
+      "save_failed": "We couldn't save your message. Please call the clinic instead.",
       "unknown": "Something went wrong. Please try again."
     },
     "directions": "Get directions",
@@ -470,6 +436,22 @@
     "success_print": "Print",
     "success_home": "Home",
     "success_appointment_id": "Reference",
+    "summary_when": "When",
+    "summary_duration": "Duration",
+    "summary_price": "Price",
+    "summary_tz": "Ulaanbaatar · UTC+8",
+    "consult_eyebrow": "Initial consultation",
+    "consult_title": "This visit is a planning consultation",
+    "consult_body": "The dentist will assess your case and walk through a tailored treatment plan. The procedure itself is scheduled at this visit.",
+    "success_manage_note": "You can manage or cancel this booking anytime from My Bookings.",
+    "success_book_another": "Book another",
+    "pay_title": "Payment",
+    "pay_lede": "Scan the QR code with your QPay app",
+    "pay_deadline": "Please complete payment within 5 minutes, or the booking is cancelled and the slot is released.",
+    "pay_after": "Once payment succeeds your appointment is confirmed. You can then view or cancel it from My Bookings.",
+    "pay_checking": "Checking payment...",
+    "pay_expired": "Payment expired. Please try again.",
+    "pay_failed": "Something went wrong. If you paid, please call us.",
     "errors": {
       "slot_already_booked": "Sorry — that slot was just taken by someone else. Please pick another.",
       "slot_in_the_past": "That time has already passed.",
@@ -509,6 +491,23 @@
     "success_signup": "Account created. Please check your email to verify.",
     "field_required": "Please fill in all fields.",
     "password_short": "Password must be at least 6 characters."
+  },
+  "account": {
+    "title": "My bookings",
+    "lede": "View and cancel your booked appointments here.",
+    "greeting": "Hello",
+    "empty": "You have no bookings yet.",
+    "book_cta": "Book appointment",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling…",
+    "cancel_confirm": "Cancel this appointment?",
+    "logout": "Sign out",
+    "status_paid": "Confirmed",
+    "status_pending": "Pending",
+    "status_cancelled": "Cancelled",
+    "status_expired": "Expired",
+    "status_failed": "Failed",
+    "ref": "Booking reference"
   },
   "footer": {
     "copyright": "© 2026 Dentaris Digital Dental Clinic. All rights reserved.",

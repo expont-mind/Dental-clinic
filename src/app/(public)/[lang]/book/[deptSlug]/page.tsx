@@ -4,12 +4,12 @@ import { notFound, redirect } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
 import {
   getServiceBySlugPublic,
-  listChildServices,
+  listBookableChildServices,
   listDoctorsForService,
 } from "@/lib/queries/catalog";
 import { getDentists, getBranches } from "@/lib/itdoctor/client";
 import { listDoctorsByITDoctorIds } from "@/lib/queries/admin";
-import { StepIndicator } from "@/components/booking/StepIndicator";
+import { BookingStepHeader } from "@/components/booking/BookingStepHeader";
 
 export default async function BookServiceOrDoctorPage({
   params,
@@ -34,8 +34,8 @@ export default async function BookServiceOrDoctorPage({
     return renderDoctorSelection({ lang, slug, sp, dict, parentName: serviceName });
   }
 
-  // Check if this parent has children
-  const children = await listChildServices(service.id);
+  // Check if this parent has bookable children
+  const children = await listBookableChildServices(service.id);
 
   if (children.length === 0) {
     // No children — this is a leaf service, go straight to doctor selection
@@ -51,43 +51,26 @@ export default async function BookServiceOrDoctorPage({
   // Show children grid (Step 1.5: pick a specific sub-service)
   return (
     <>
-      <section className="relative overflow-hidden bg-primary-soft">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/40 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
-
-        <StepIndicator
-          variant="onSoft"
-          current={1}
-          stepWord={dict.booking.step}
-          ofWord={dict.booking.of}
-          labels={[
-            dict.nav.services,
-            dict.nav.doctors,
-            dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
-            dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
-          ]}
-        />
-
-        <div className="relative mx-auto max-w-3xl px-5 pt-10 pb-14 text-center sm:px-8 sm:pt-12 sm:pb-16">
-          <Link
-            href={`/${lang}/book`}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:text-ink"
-          >
-            ← {dict.common.back}
-          </Link>
-          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
-            ◦ {serviceName}
-          </p>
-          <h1 className="mt-2 text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
-            {lang === "mn" ? "Үйлчилгээ сонгох" : "Choose a service"}
-          </h1>
-          <p className="mx-auto mt-4 max-w-md text-[14px] leading-7 text-muted sm:text-[15px]">
-            {lang === "mn"
-              ? "Доорх үйлчилгээнүүдээс сонгоно уу"
-              : "Select from the services below"}
-          </p>
-        </div>
-      </section>
+      <BookingStepHeader
+        current={1}
+        stepWord={dict.booking.step}
+        ofWord={dict.booking.of}
+        labels={[
+          dict.nav.services,
+          dict.nav.doctors,
+          dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
+          dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
+        ]}
+        backHref={`/${lang}/book`}
+        backLabel={dict.common.back}
+        eyebrow={serviceName}
+        title={lang === "mn" ? "Үйлчилгээ сонгох" : "Choose a service"}
+        lede={
+          lang === "mn"
+            ? "Доорх үйлчилгээнүүдээс сонгоно уу"
+            : "Select from the services below"
+        }
+      />
 
       <section className="mx-auto max-w-5xl px-5 pb-20 pt-10 sm:px-8 sm:pb-28 sm:pt-14">
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -145,7 +128,12 @@ async function renderDoctorSelection({
 }) {
   const selectedServiceName = sp.service_name || parentName;
   const noteQs = sp.note ? `&note=${encodeURIComponent(sp.note)}` : "";
-  const svcQs = `?service_name=${encodeURIComponent(selectedServiceName)}${noteQs}`;
+  // Thread the actual child service slug through to the slot picker and
+  // confirm page so they can load the right duration_min / is_multi_visit.
+  // Without this the confirm page falls back to the parent (e.g. "cosmetic"),
+  // which has no duration set, and the ghost chain never fires.
+  const serviceQs = sp.service ? `&service=${encodeURIComponent(sp.service)}` : "";
+  const svcQs = `?service_name=${encodeURIComponent(selectedServiceName)}${serviceQs}${noteQs}`;
 
   // If doctor query param, skip to slot picker
   if (sp.doctor) {
@@ -170,8 +158,22 @@ async function renderDoctorSelection({
 
   if (doctors.length === 0) {
     try {
+      // iDoctor's `/dentists` (no branch_id) returns only one branch's worth.
+      // Fan out across every branch and dedupe by dentist id so multi-floor
+      // clinics show all dentists, not just floor-1's first 9.
       const branches = await getBranches();
-      itDentists = await getDentists(branches[0]?.id);
+      if (branches.length === 0) {
+        itDentists = await getDentists();
+      } else {
+        const perBranch = await Promise.all(
+          branches.map((b) => getDentists(b.id).catch(() => [])),
+        );
+        const seen = new Map<number, (typeof perBranch)[number][number]>();
+        for (const list of perBranch) {
+          for (const d of list) if (!seen.has(d.id)) seen.set(d.id, d);
+        }
+        itDentists = Array.from(seen.values());
+      }
     } catch { /* empty */ }
     try {
       dbDoctors = await listDoctorsByITDoctorIds();
@@ -180,70 +182,26 @@ async function renderDoctorSelection({
 
   return (
     <>
-      <section className="relative overflow-hidden bg-primary-soft">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/40 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
-
-        <StepIndicator
-          variant="onSoft"
-          current={2}
-          stepWord={dict.booking.step}
-          ofWord={dict.booking.of}
-          labels={[
-            dict.nav.services,
-            dict.nav.doctors,
-            dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
-            dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
-          ]}
-        />
-
-        <div className="relative mx-auto max-w-3xl px-5 pt-10 pb-14 text-center sm:px-8 sm:pt-12 sm:pb-16">
-          <Link
-            href={sp.service ? `/${lang}/book/${slug}` : `/${lang}/book`}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:text-ink"
-          >
-            ← {dict.common.back}
-          </Link>
-          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
-            ◦ {selectedServiceName}
-          </p>
-          <h1 className="mt-2 text-[32px] font-extrabold uppercase leading-[1.05] tracking-tight text-ink sm:text-[44px]">
-            {dict.booking.step_doctor_title}
-          </h1>
-          <p className="mx-auto mt-4 max-w-md text-[14px] leading-7 text-muted sm:text-[15px]">
-            {dict.booking.step_doctor_lede}
-          </p>
-        </div>
-      </section>
+      <BookingStepHeader
+        current={2}
+        stepWord={dict.booking.step}
+        ofWord={dict.booking.of}
+        labels={[
+          dict.nav.services,
+          dict.nav.doctors,
+          dict.booking.step_slot_title.replace(/[…—-].*$/, "").trim(),
+          dict.booking.step_form_title.replace(/[…—-].*$/, "").trim(),
+        ]}
+        backHref={sp.service ? `/${lang}/book/${slug}` : `/${lang}/book`}
+        backLabel={dict.common.back}
+        eyebrow={selectedServiceName}
+        title={dict.booking.step_doctor_title}
+        lede={dict.booking.step_doctor_lede}
+      />
 
       <section className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8 sm:pb-28 sm:pt-14">
-        {/* Any doctor option */}
-        <Link
-          href={`/${lang}/book/${slug}/0${svcQs}`}
-          className="mb-6 block overflow-hidden rounded-[24px] bg-surface ring-1 ring-line transition-all hover:-translate-y-1 hover:ring-primary/40 hover:shadow-[0_18px_36px_-22px_rgba(26,132,120,0.3)]"
-        >
-          <div className="flex items-center gap-4 p-5 sm:p-6">
-            <span className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[14px] font-extrabold uppercase tracking-wide text-ink">
-                {lang === "mn" ? "Дурын эмч" : "Any available doctor"}
-              </h2>
-              <p className="mt-1 text-[12.5px] leading-6 text-muted">
-                {lang === "mn"
-                  ? "Хамгийн ойрын боломжит цагийг автоматаар сонгоно"
-                  : "Automatically picks the earliest available slot"}
-              </p>
-            </div>
-            <span className="text-[11px] font-bold text-primary">{dict.common.select} →</span>
-          </div>
-        </Link>
-
         {/* Doctor grid */}
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {doctors.length > 0
             ? doctors.map((d) => {
                 const name = lang === "mn" ? d.name_mn : d.name_en;
@@ -305,32 +263,51 @@ function DoctorCard({
     <li className="group">
       <Link
         href={href}
-        className="block overflow-hidden rounded-[24px] bg-surface ring-1 ring-line transition-all hover:-translate-y-1 hover:ring-primary/40 hover:shadow-[0_18px_36px_-22px_rgba(26,132,120,0.3)]"
+        className="flex items-center gap-4 overflow-hidden rounded-2xl bg-surface p-3 ring-1 ring-line transition-all hover:ring-primary/40 sm:block sm:rounded-[24px] sm:p-0 sm:hover:-translate-y-1 sm:hover:shadow-[0_18px_36px_-22px_rgba(26,132,120,0.3)]"
       >
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-primary-soft">
+        {/* Photo — small avatar on mobile, full cover on sm+ */}
+        <div className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl bg-primary-soft sm:aspect-[4/5] sm:h-auto sm:w-full sm:rounded-none">
           {avatar ? (
             <Image
               src={avatar}
               alt={name}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              sizes="(max-width: 640px) 76px, (max-width: 1024px) 50vw, 33vw"
               className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="flex h-full items-center justify-center font-display text-6xl text-muted-2">
+            <div className="flex h-full items-center justify-center font-display text-2xl text-muted-2 sm:text-6xl">
               {name.charAt(0)}
             </div>
           )}
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink backdrop-blur">
+          <span className="absolute right-3 top-3 hidden items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink backdrop-blur sm:inline-flex">
             {badge}
           </span>
         </div>
-        <div className="p-4 sm:p-5">
-          <h3 className="font-display text-[18px] font-bold leading-tight tracking-tight text-ink group-hover:text-primary transition-colors">
+
+        {/* Text */}
+        <div className="min-w-0 flex-1 sm:p-5">
+          <h3 className="font-display text-[17px] font-bold leading-tight tracking-tight text-ink transition-colors group-hover:text-primary sm:text-[18px]">
             {name}
           </h3>
           {title && <p className="mt-1 text-[12px] text-muted">{title}</p>}
         </div>
+
+        {/* Chevron — mobile only */}
+        <svg
+          aria-hidden
+          className="shrink-0 text-muted-2 sm:hidden"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
       </Link>
     </li>
   );

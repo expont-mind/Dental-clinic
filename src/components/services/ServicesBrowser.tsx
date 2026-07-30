@@ -21,7 +21,7 @@ export type CatalogGroup = {
 
 type Props = {
   groups: CatalogGroup[];
-  featured: ServiceCardItem | null;
+  featured: ServiceCardItem[];
   lang: "mn" | "en";
   labels: {
     searchPlaceholder: string;
@@ -114,7 +114,7 @@ export function ServicesBrowser({
     0,
   );
 
-  const showFeatured = featured && !activeIntent && !debouncedQuery;
+  const showFeatured = featured.length > 0 && !activeIntent && !debouncedQuery;
   const isFiltered = Boolean(activeIntent || debouncedQuery);
 
   return (
@@ -133,18 +133,23 @@ export function ServicesBrowser({
         }}
       />
 
-      {showFeatured && featured && (
+      {showFeatured && (
         <section className="mx-auto max-w-7xl px-5 pt-10 sm:px-8 sm:pt-14">
           <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
             ✦ {labels.featuredEyebrow}
           </p>
-          <FeaturedServiceCard
-            item={featured}
-            lang={lang}
-            viewLabel={labels.viewDetails}
-            featuredLabel={labels.featuredLabel}
-            index={0}
-          />
+          <div className="grid gap-6 sm:gap-8">
+            {featured.map((item, idx) => (
+              <FeaturedServiceCard
+                key={item.id}
+                item={item}
+                lang={lang}
+                viewLabel={labels.viewDetails}
+                featuredLabel={labels.featuredLabel}
+                index={idx}
+              />
+            ))}
+          </div>
         </section>
       )}
 

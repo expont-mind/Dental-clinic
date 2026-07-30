@@ -3,18 +3,6 @@ import { LOCALES, DEFAULT_LOCALE, hasLocale } from "@/lib/i18n/dictionaries";
 
 const PUBLIC_FILE = /\.(.*)$/;
 
-function pickLocale(req: NextRequest) {
-  const accept = req.headers.get("accept-language") || "";
-  // crude but dependency-free: scan in order, first matching locale wins
-  for (const item of accept.split(",")) {
-    const tag = item.split(";")[0].trim().toLowerCase();
-    if (!tag) continue;
-    const base = tag.split("-")[0];
-    if (hasLocale(base)) return base;
-  }
-  return DEFAULT_LOCALE;
-}
-
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -36,10 +24,12 @@ export function proxy(req: NextRequest) {
   // We keep them un-prefixed; auth gate is handled inside the admin layout.
   if (segs[0] === "admin") return;
 
-  // Redirect bare path to user's preferred locale
-  const locale = pickLocale(req);
+  // Default every un-prefixed path to Mongolian — the clinic's audience is
+  // overwhelmingly Mongolian, so we ignore the browser's Accept-Language
+  // (which sent English browsers to /en). English stays reachable via the
+  // in-page language toggle.
   const url = req.nextUrl.clone();
-  url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
+  url.pathname = `/${DEFAULT_LOCALE}${pathname === "/" ? "" : pathname}`;
   return NextResponse.redirect(url);
 }
 

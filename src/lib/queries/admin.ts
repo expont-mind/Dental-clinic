@@ -1,9 +1,12 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { createSupabaseAdmin, isAdminConfigured } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/auth";
 import type {
   ClinicProfile,
   Department,
   Doctor,
+  PendingBooking,
+  PendingBookingStatus,
   ServiceWithDepartment,
 } from "@/lib/supabase/types";
 
@@ -14,7 +17,7 @@ const SERVICE_SELECT = `
   price_text_mn, price_text_en, duration_text_mn, duration_text_en,
   image_url, hero_image_url, icon_key,
   content_mn, content_en,
-  itdoctor_service_id, is_active, is_featured, sort_order, created_at, updated_at,
+  itdoctor_service_id, is_active, is_featured, is_bookable, show_duration, is_multi_visit, sort_order, created_at, updated_at,
   department:departments!inner ( id, slug, name_mn, name_en )
 `;
 
@@ -131,4 +134,133 @@ export async function getDoctorByIdAdmin(id: string): Promise<Doctor | null> {
     .maybeSingle();
   if (error) throw error;
   return data as Doctor | null;
+}
+
+// ----------------------------------------------------------------------------
+// Pending bookings — the QPay → iDoctor reconciliation queue.
+// This is the real source of truth for bookings made through the site.
+// See supabase/12_booking_payment.sql + src/lib/actions/fulfill-booking.ts.
+// ----------------------------------------------------------------------------
+
+export type PendingBookingFilter =
+  | PendingBookingStatus
+  | "pending_any"
+  | "all";
+
+export async function listPendingBookingsAdmin(
+  statusFilter: PendingBookingFilter = "all",
+): Promise<PendingBooking[]> {
+  // Use the service-role client: pending_bookings is written by
+  // createSupabaseAdmin in fulfill-booking.ts and isn't granted to anon.
+  // The admin page is gated by requireAdminUser, so bypassing RLS is safe.
+  if (!isAdminConfigured()) return [];
+  const supabase = createSupabaseAdmin();
+  let q = supabase
+    .from("pending_bookings")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (statusFilter === "pending_any") {
+    q = q.in("status", ["pending", "processing"]);
+  } else if (statusFilter !== "all") {
+    q = q.eq("status", statusFilter);
+  }
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as unknown as PendingBooking[];
+}
+
+/**
+ * Customer-facing: every booking made under a given phone (8 digits, the form
+ * stored in pending_bookings). Uses the service-role client because the table
+ * isn't exposed to anon; callers MUST derive `phone8` from the authenticated
+ * session, never from client input. Newest appointment first.
+ */
+export async function listBookingsByPhone(
+  phone8: string,
+): Promise<PendingBooking[]> {
+  if (!isAdminConfigured() || !phone8) return [];
+  const supabase = createSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("pending_bookings")
+    .select("*")
+    .eq("customer_phone", phone8)
+    .order("slot_datetime", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []) as unknown as PendingBooking[];
+}
+
+export type AdminBookingStats = {
+  paidToday: number;
+  paidWeek: number;
+  paidMonth: number;
+  paidAll: number;
+  awaitingPayment: number;
+  activeDoctors: number;
+};
+
+export async function getAdminBookingStats(): Promise<AdminBookingStats> {
+  const zero: AdminBookingStats = {
+    paidToday: 0,
+    paidWeek: 0,
+    paidMonth: 0,
+    paidAll: 0,
+    awaitingPayment: 0,
+    activeDoctors: 0,
+  };
+  if (!isAdminConfigured()) return zero;
+
+  const supabase = createSupabaseAdmin();
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(startOfWeek.getDate() - 6);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // We count by created_at (rather than paid_at) so day/week/month buckets
+  // line up with the booking submission timeline. Bookings made today that
+  // pay slightly later still show up in "today".
+  const [todayRes, weekRes, monthRes, allRes, awaitingRes, doctorsRes] =
+    await Promise.all([
+      supabase
+        .from("pending_bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid")
+        .gte("created_at", startOfDay.toISOString()),
+      supabase
+        .from("pending_bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid")
+        .gte("created_at", startOfWeek.toISOString()),
+      supabase
+        .from("pending_bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid")
+        .gte("created_at", startOfMonth.toISOString()),
+      supabase
+        .from("pending_bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid"),
+      supabase
+        .from("pending_bookings")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["pending", "processing"])
+        .gt("expires_at", now.toISOString()),
+      supabase
+        .from("doctors")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true),
+    ]);
+
+  return {
+    paidToday: todayRes.count ?? 0,
+    paidWeek: weekRes.count ?? 0,
+    paidMonth: monthRes.count ?? 0,
+    paidAll: allRes.count ?? 0,
+    awaitingPayment: awaitingRes.count ?? 0,
+    activeDoctors: doctorsRes.count ?? 0,
+  };
 }

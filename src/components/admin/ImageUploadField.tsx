@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { Upload, X, Link as LinkIcon } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { compressImage } from "@/lib/compressImage";
 
 type Props = {
@@ -131,19 +131,6 @@ export function ImageUploadField({
                 Хасах
               </button>
             )}
-          </div>
-          <div className="relative">
-            <LinkIcon
-              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9ca3af]"
-              strokeWidth={2.25}
-            />
-            <input
-              type="url"
-              placeholder="эсвэл URL: https://… эсвэл /p1.jpg"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-full rounded-xl border border-line bg-white px-4 py-2 pl-9 text-[12px] outline-none placeholder:text-[#c1c7cf] focus:border-primary"
-            />
           </div>
           {error && (
             <p className="text-[11px] font-semibold text-rose-600">{error}</p>

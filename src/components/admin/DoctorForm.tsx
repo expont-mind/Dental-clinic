@@ -3,6 +3,7 @@
 import { useActionState, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Upload, X, RefreshCw } from "lucide-react";
 import {
   createDoctorAction,
   updateDoctorAction,
@@ -17,7 +18,14 @@ import { compressImage } from "@/lib/compressImage";
 
 type DeptOption = { id: string; name_mn: string; name_en: string };
 type BranchOption = { id: string; name_mn: string; name_en: string };
-type ServiceOption = { id: string; name_mn: string; name_en: string };
+type ServiceOption = {
+  id: string;
+  name_mn: string;
+  name_en: string;
+  parent_id: string | null;
+  parent_name_mn: string | null;
+  department_name_mn: string | null;
+};
 
 type Existing = {
   id: string;
@@ -74,9 +82,16 @@ export function DoctorForm({
     v.photo_url ?? existing?.photo_url ?? "",
   );
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleFileUpload(file: File) {
+    setUploadError(null);
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setUploadError("JPG, PNG, эсвэл WebP файл сонгоно уу.");
+      return;
+    }
     setUploading(true);
     try {
       let toUpload = file;
@@ -95,10 +110,10 @@ export function DoctorForm({
       if (data.url) {
         setPhoto(data.url);
       } else {
-        alert(data.error || "Upload failed");
+        setUploadError(data.error || "Хуулж чадсангүй.");
       }
     } catch {
-      alert("Upload failed");
+      setUploadError("Хуулж чадсангүй.");
     } finally {
       setUploading(false);
     }
@@ -117,52 +132,145 @@ export function DoctorForm({
         </div>
       )}
 
-      {/* Photo upload */}
+      {/* Photo upload — portrait avatar with drag-and-drop, click-to-replace
+          overlay actions, and an inline upload progress state. */}
       <div>
-        <label className="mb-2 block text-[12px] font-semibold text-[#374151]">
-          Зураг
-        </label>
-        <div className="flex items-center gap-4">
-          <div className="relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f3f4f6] ring-1 ring-line">
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <label className="block text-[12px] font-semibold text-[#374151]">
+            Зураг
+          </label>
+          <p className="text-[10px] text-[#9ca3af]">JPG · PNG · WebP — 4 : 5 портрет</p>
+        </div>
+
+        <input type="hidden" name="photo_url" value={photo} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileUpload(file);
+            // Reset so re-uploading the same file fires onChange again
+            e.target.value = "";
+          }}
+        />
+
+        <div className="flex items-start gap-5">
+          {/* Avatar drop zone */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={photo ? "Зураг солих" : "Зураг хуулах"}
+            onClick={() => !uploading && fileRef.current?.click()}
+            onKeyDown={(e) => {
+              if (uploading) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileRef.current?.click();
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!uploading) setIsDragging(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (uploading) return;
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleFileUpload(file);
+            }}
+            className={
+              "group relative aspect-[4/5] w-40 shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-[#f3f4f6] outline-none transition-all " +
+              (isDragging
+                ? "ring-2 ring-primary"
+                : photo
+                  ? "ring-1 ring-line hover:ring-primary/50"
+                  : "border-2 border-dashed border-line hover:border-primary/50") +
+              (uploading ? " cursor-wait" : "")
+            }
+          >
             {photo ? (
               <Image
                 src={photo}
-                alt="Preview"
+                alt="Эмчийн зураг"
                 fill
-                sizes="96px"
+                sizes="160px"
                 className="object-cover"
               />
             ) : (
-              <span className="text-[10px] text-[#9ca3af]">no photo</span>
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary ring-1 ring-line">
+                  <Upload className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+                <span className="text-[11px] font-semibold text-[#6b7280]">
+                  Зураг хуулах
+                </span>
+                <span className="text-[10px] leading-4 text-[#9ca3af]">
+                  Чирэх эсвэл дарж сонгох
+                </span>
+              </div>
+            )}
+
+            {/* Hover overlay for filled state — click anywhere triggers replace */}
+            {photo && !uploading && (
+              <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/55 via-black/0 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="m-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ink shadow-sm">
+                  <RefreshCw className="h-3 w-3" strokeWidth={2.5} />
+                  Солих
+                </span>
+              </div>
+            )}
+
+            {/* Upload-in-progress overlay */}
+            {uploading && (
+              <div className="absolute inset-0 grid place-items-center bg-white/80 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-2 text-primary">
+                  <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <span className="text-[11px] font-bold">Хуулж байна…</span>
+                </div>
+              </div>
             )}
           </div>
-          <div className="flex-1 space-y-2">
-            <input type="hidden" name="photo_url" value={photo} />
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-            />
+
+          {/* Action column — actions stay visible so mobile (no hover) works too */}
+          <div className="flex flex-1 flex-col gap-2 pt-1">
             <button
               type="button"
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
-              className="rounded-lg border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-[#f3f4f6] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#0f172a] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {uploading ? "Хуулж байна…" : photo ? "Зураг солих" : "Зураг хуулах"}
+              <Upload className="h-3.5 w-3.5" strokeWidth={2.5} />
+              {photo ? "Зураг солих" : "Зураг хуулах"}
             </button>
-            <input
-              type="url"
-              placeholder="эсвэл URL оруулах: https://… /p1.jpg"
-              value={photo}
-              onChange={(e) => setPhoto(e.target.value)}
-              className="w-full rounded-xl border border-line bg-white px-4 py-2 text-[12px] outline-none placeholder:text-[#c1c7cf] focus:border-primary"
-            />
+            {photo && !uploading && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPhoto("");
+                  setUploadError(null);
+                }}
+                className="inline-flex items-center gap-1.5 self-start rounded-full border border-line bg-white px-4 py-2 text-[12px] font-bold text-[#6b7280] transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                Хасах
+              </button>
+            )}
+            {uploadError && (
+              <p className="text-[11px] font-semibold text-rose-600">
+                {uploadError}
+              </p>
+            )}
+            <p className="mt-auto text-[11px] leading-5 text-[#9ca3af]">
+              Эмчийн профайл болон захиалгын карт дээр харагдана. Хэмжээг
+              автоматаар багасгана.
+            </p>
           </div>
         </div>
       </div>

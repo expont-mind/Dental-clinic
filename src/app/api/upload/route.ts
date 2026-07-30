@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assertAdmin } from "@/lib/auth";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB safety net (client compresses to ~1.5MB first)
 
 export async function POST(req: NextRequest) {
+  // Only the admin panel uploads images. Left open, this endpoint let anyone
+  // push files into the clinic's Cloudinary account and serve arbitrary
+  // content from its delivery URLs.
+  const authErr = await assertAdmin();
+  if (authErr) {
+    return NextResponse.json({ error: authErr }, { status: 401 });
+  }
+
   const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const preset = process.env.CLOUDINARY_UPLOAD_PRESET;
   const folder = process.env.CLOUDINARY_UPLOAD_FOLDER;

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
+import { getDictionary, hasLocale, type Locale } from "@/lib/i18n/dictionaries";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
 import { formatFull } from "@/lib/utils/datetime";
 
 export default async function BookSuccessPage({
@@ -26,17 +28,17 @@ export default async function BookSuccessPage({
   const sp = await searchParams;
 
   const when = sp.date
-    ? formatFull(sp.date.replace(" ", "T") + "+08:00", lang as "mn" | "en")
+    ? formatFull(sp.date.replace(" ", "T") + "+08:00", lang as Locale)
     : "";
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8 sm:py-24">
+    <Container size="md" className="py-16 sm:py-24">
       <div className="text-center">
         <span
           aria-hidden
-          className="inline-grid h-14 w-14 place-items-center rounded-full bg-primary text-white"
+          className="inline-grid h-16 w-16 place-items-center rounded-full bg-primary text-white shadow-[0_10px_30px_-10px_rgb(13_110_114/0.7)]"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
             <path
               d="m5 12 5 5L20 7"
               stroke="currentColor"
@@ -52,44 +54,47 @@ export default async function BookSuccessPage({
         <p className="mt-3 text-lg text-muted">{dict.booking.success_lede}</p>
       </div>
 
-      <dl className="mt-12 overflow-hidden rounded-3xl border border-line bg-surface">
-        <Row
-          label={dict.booking.success_appointment_id}
-          value={sp.ref ?? "—"}
-          mono
-        />
-        {sp.dentist && (
-          <Row label={dict.nav.doctors} value={sp.dentist} />
-        )}
-        {sp.service && (
-          <Row label={dict.nav.services} value={sp.service} />
-        )}
-        {sp.branch && (
+      <Card className="mt-10 overflow-hidden">
+        <dl>
           <Row
-            label={lang === "mn" ? "Салбар" : "Branch"}
-            value={sp.branch}
+            label={dict.booking.success_appointment_id}
+            value={sp.ref ?? "—"}
+            mono
           />
-        )}
-        {when && (
-          <Row
-            label={dict.booking.step_slot_title.split(" ")[0]}
-            value={when}
-          />
-        )}
-        {sp.name && (
-          <Row label={dict.booking.field_name} value={sp.name} />
-        )}
-        {sp.phone && (
-          <Row label={dict.booking.field_phone} value={sp.phone} />
-        )}
-      </dl>
+          {sp.dentist && <Row label={dict.nav.doctors} value={sp.dentist} />}
+          {sp.service && <Row label={dict.nav.services} value={sp.service} />}
+          {sp.branch && (
+            <Row label={lang === "mn" ? "Салбар" : "Branch"} value={sp.branch} />
+          )}
+          {when && (
+            <Row label={dict.booking.summary_when} value={when} />
+          )}
+          {sp.name && <Row label={dict.booking.field_name} value={sp.name} />}
+          {sp.phone && <Row label={dict.booking.field_phone} value={sp.phone} />}
+        </dl>
+      </Card>
 
-      <div className="mt-10 flex flex-wrap justify-center gap-3">
+      {/* Manage / cancel — routes through login when logged out. */}
+      <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
         <Button asChild size="lg">
-          <Link href={`/${lang}`}>{dict.booking.success_home}</Link>
+          <Link href={`/${lang}/account`}>{dict.account.title}</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <Link href={`/${lang}/book`}>{dict.booking.success_book_another}</Link>
         </Button>
       </div>
-    </div>
+      <p className="mt-4 text-center text-[13px] leading-6 text-muted">
+        {dict.booking.success_manage_note}
+      </p>
+      <div className="mt-6 text-center">
+        <Link
+          href={`/${lang}`}
+          className="text-[13px] font-semibold text-muted hover:text-primary transition-colors"
+        >
+          {dict.booking.success_home}
+        </Link>
+      </div>
+    </Container>
   );
 }
 

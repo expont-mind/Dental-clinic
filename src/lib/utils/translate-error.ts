@@ -12,11 +12,12 @@ type ErrorLike = {
 };
 
 const SUPABASE_MESSAGE_MAP: Record<string, string> = {
-  "Invalid login credentials": "Имэйл эсвэл нууц үг буруу байна.",
-  "Email not confirmed": "Имэйл хаягаа баталгаажуулна уу.",
+  "Invalid login credentials": "Утас эсвэл нууц үг буруу байна.",
+  "Email not confirmed": "Бүртгэлээ баталгаажуулна уу.",
   "Email rate limit exceeded":
-    "Имэйл илгээх хязгаар хэтэрсэн. Хэсэг хүлээгээд дахин оролдоно уу.",
-  "User already registered": "Энэ имэйл аль хэдийн бүртгэлтэй байна.",
+    "Хүсэлтийн хязгаар хэтэрсэн. Хэсэг хүлээгээд дахин оролдоно уу.",
+  "already been registered": "Энэ утасны дугаар аль хэдийн бүртгэлтэй байна.",
+  "User already registered": "Энэ утасны дугаар аль хэдийн бүртгэлтэй байна.",
   "Password should be at least 6 characters":
     "Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой.",
   "Unable to validate email address: invalid format":
@@ -91,16 +92,19 @@ export function translateError(err: unknown): string {
     return POSTGRES_CODE_MAP[e.code];
   }
 
-  // 2. HTTP status codes
-  if (typeof e.status === "number" && STATUS_MAP[e.status]) {
-    return STATUS_MAP[e.status];
-  }
-
-  // 3. Match known Supabase / network messages
+  // 2. Match known Supabase / network messages first — they are more specific
+  //    than a generic HTTP status (e.g. Supabase returns 400 for
+  //    "Invalid login credentials", which deserves a real translation rather
+  //    than the generic "Хүсэлт буруу байна").
   for (const [pattern, translation] of Object.entries(SUPABASE_MESSAGE_MAP)) {
     if (raw.toLowerCase().includes(pattern.toLowerCase())) {
       return translation;
     }
+  }
+
+  // 3. HTTP status codes
+  if (typeof e.status === "number" && STATUS_MAP[e.status]) {
+    return STATUS_MAP[e.status];
   }
 
   // 4. Generic fallback

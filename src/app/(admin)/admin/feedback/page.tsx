@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { requireAdminUser, isSupabaseConfigured } from "@/lib/auth";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { requireAdminUser } from "@/lib/auth";
+import { createSupabaseAdmin, isAdminConfigured } from "@/lib/supabase/admin";
 import { translateError } from "@/lib/utils/translate-error";
 import { listLocalFeedback } from "@/lib/data/feedback-store";
 import { FeedbackCard } from "@/components/admin/FeedbackCard";
@@ -68,9 +68,11 @@ export default async function AdminFeedbackPage({
   let errorMessage: string | null = null;
   let tableMissing = false;
 
-  if (isSupabaseConfigured()) {
+  // Service-role client: migration 31 enables RLS on `feedback` with no
+  // policies, so the anon client sees zero rows. This page is admin-gated.
+  if (isAdminConfigured()) {
     try {
-      const supabase = await createSupabaseServer();
+      const supabase = createSupabaseAdmin();
       const { data, error } = await supabase
         .from("feedback")
         .select("id,name,phone,message,status,created_at")

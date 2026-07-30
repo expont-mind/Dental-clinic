@@ -28,16 +28,26 @@ export async function generateStaticParams() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url || url.includes("YOUR_PROJECT_REF")) return [];
 
-  const supabase = createSupabaseStatic();
-  const { data: allServices } = await supabase
-    .from("services")
-    .select("slug")
-    .eq("is_active", true);
+  // A transient network/DNS blip at build or dev boot must not throw here —
+  // these params are an optimization; the routes still render on demand.
+  try {
+    const supabase = createSupabaseStatic();
+    const { data: allServices } = await supabase
+      .from("services")
+      .select("slug")
+      .eq("is_active", true);
 
-  return (allServices ?? []).flatMap((s) => [
-    { lang: "mn", slug: s.slug },
-    { lang: "en", slug: s.slug },
-  ]);
+    return (allServices ?? []).flatMap((s) => [
+      { lang: "mn", slug: s.slug },
+      { lang: "en", slug: s.slug },
+    ]);
+  } catch (e) {
+    console.warn(
+      "[services/[slug]] generateStaticParams skipped (fetch failed):",
+      e instanceof Error ? e.message : e,
+    );
+    return [];
+  }
 }
 
 export default async function ServiceDetailPage({
@@ -85,10 +95,24 @@ async function ParentDetail({
   const name = isMn ? service.name_mn : service.name_en;
   const desc = isMn ? service.description_mn : service.description_en;
   const long = isMn ? service.long_description_mn : service.long_description_en;
-  const duration = isMn ? service.duration_text_mn : service.duration_text_en;
+  const duration = service.show_duration
+    ? isMn
+      ? service.duration_text_mn
+      : service.duration_text_en
+    : null;
   const price = isMn ? service.price_text_mn : service.price_text_en;
   const heroImg = service.hero_image_url || "/hamtolon.jpg";
   const bookHref = `/${lang}/book/${service.slug}`;
+
+  // A service is bookable online when its own is_bookable flag is on OR any
+  // of its children are bookable. For categories (services with children),
+  // the parent's own flag is force-cleared on save — bookability comes
+  // strictly from leaves. The OR covers a parentless top-level leaf with
+  // no children: its own flag applies.
+  const isBookable =
+    children.length > 0
+      ? children.some((c) => c.is_bookable)
+      : service.is_bookable;
 
   const treatments = content?.treatments ?? [];
   const benefits = content?.benefits ?? [];
@@ -176,7 +200,9 @@ async function ParentDetail({
                           className="h-3.5 w-3.5"
                           strokeWidth={2.25}
                         />
-                        {dict.services.duration_label}
+                        {service.is_multi_visit
+                          ? dict.services.total_treatment_label
+                          : dict.services.duration_label}
                       </p>
                       <p className="font-display mt-1 text-[24px] font-extrabold text-ink sm:text-[28px]">
                         {duration}
@@ -187,16 +213,18 @@ async function ParentDetail({
               )}
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href={bookHref}
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-6 py-3 text-[14px] font-bold text-white shadow-[0_8px_20px_-8px_rgba(26,132,120,0.6)] hover:bg-primary-hover transition-colors"
-                >
-                  {dict.services.book_cta}
-                  <ArrowUpRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                    strokeWidth={2.5}
-                  />
-                </Link>
+                {isBookable && (
+                  <Link
+                    href={bookHref}
+                    className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-6 py-3 text-[14px] font-bold text-white shadow-[0_8px_20px_-8px_rgba(26,132,120,0.6)] hover:bg-primary-hover transition-colors"
+                  >
+                    {dict.services.book_cta}
+                    <ArrowUpRight
+                      className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                      strokeWidth={2.5}
+                    />
+                  </Link>
+                )}
                 {navItems.length > 1 && (
                   <a
                     href="#overview"
@@ -507,32 +535,36 @@ async function ParentDetail({
         </section>
       )}
 
-      {/* Final CTA */}
-      <section className="px-3 pb-3 sm:px-5 sm:pb-5">
-        <div className="bg-forest-grain mx-auto max-w-7xl rounded-[28px] px-8 py-12 text-center text-white sm:rounded-[40px] sm:px-12 sm:py-16">
-          <p className="font-script text-[28px] leading-none text-primary sm:text-[36px]">
-            {dict.brand.name}
-          </p>
-          <h2 className="mt-2 text-[26px] font-extrabold uppercase tracking-tight sm:text-[36px]">
-            {dict.services.book_cta}
-          </h2>
-          <Link
-            href={bookHref}
-            className="group mt-7 inline-flex items-center gap-3 rounded-full bg-primary py-2.5 pl-7 pr-3 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
-          >
-            {dict.home.hero_schedule_btn}
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
-              <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-            </span>
-          </Link>
-        </div>
-      </section>
+      {/* Final CTA — hidden when the service isn't bookable online */}
+      {isBookable && (
+        <section className="px-3 pb-3 sm:px-5 sm:pb-5">
+          <div className="bg-forest-grain mx-auto max-w-7xl rounded-[28px] px-8 py-12 text-center text-white sm:rounded-[40px] sm:px-12 sm:py-16">
+            <p className="font-script text-[28px] leading-none text-primary sm:text-[36px]">
+              {dict.brand.name}
+            </p>
+            <h2 className="mt-2 text-[26px] font-extrabold uppercase tracking-tight sm:text-[36px]">
+              {dict.services.book_cta}
+            </h2>
+            <Link
+              href={bookHref}
+              className="group mt-7 inline-flex items-center gap-3 rounded-full bg-primary py-2.5 pl-7 pr-3 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
+            >
+              {dict.home.hero_schedule_btn}
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
+                <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+            </Link>
+          </div>
+        </section>
+      )}
 
-      <StickyBookCTA
-        href={bookHref}
-        label={dict.services.book_cta}
-        price={price}
-      />
+      {isBookable && (
+        <StickyBookCTA
+          href={bookHref}
+          label={dict.services.book_cta}
+          price={price}
+        />
+      )}
     </div>
   );
 }
@@ -576,17 +608,23 @@ async function ChildDetail({
         ? service.price_text_mn
         : service.price_text_en
       : null;
-  const durationFormatted = service.duration_min
-    ? `${service.duration_min} ${isMn ? "мин" : "min"}`
-    : service.duration_text_mn
-      ? isMn
-        ? service.duration_text_mn
-        : service.duration_text_en
-      : null;
+  const durationFormatted = service.show_duration
+    ? service.duration_min
+      ? `${service.duration_min} ${isMn ? "мин" : "min"}`
+      : service.duration_text_mn
+        ? isMn
+          ? service.duration_text_mn
+          : service.duration_text_en
+        : null
+    : null;
 
   const bookHref = parent
     ? `/${lang}/book/${parent.slug}?service=${service.slug}&service_name=${encodeURIComponent(name)}`
     : `/${lang}/book/${service.slug}`;
+
+  // Child variant: gate on is_bookable. iDoctor service routing now happens
+  // via env vars + is_multi_visit, not per-service IDs.
+  const isBookable = service.is_bookable;
 
   const treatments = content?.treatments ?? [];
   const faq = content?.faq ?? [];
@@ -679,7 +717,9 @@ async function ChildDetail({
                           className="h-3.5 w-3.5"
                           strokeWidth={2.25}
                         />
-                        {dict.services.duration_label}
+                        {service.is_multi_visit
+                          ? dict.services.total_treatment_label
+                          : dict.services.duration_label}
                       </p>
                       <p className="font-display mt-1 text-[22px] font-extrabold text-ink sm:text-[26px]">
                         {durationFormatted}
@@ -690,16 +730,18 @@ async function ChildDetail({
               )}
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href={bookHref}
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-6 py-3 text-[14px] font-bold text-white shadow-[0_8px_20px_-8px_rgba(26,132,120,0.6)] hover:bg-primary-hover transition-colors"
-                >
-                  {dict.services.book_cta}
-                  <ArrowUpRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                    strokeWidth={2.5}
-                  />
-                </Link>
+                {isBookable && (
+                  <Link
+                    href={bookHref}
+                    className="group inline-flex items-center gap-2.5 rounded-full bg-primary px-6 py-3 text-[14px] font-bold text-white shadow-[0_8px_20px_-8px_rgba(26,132,120,0.6)] hover:bg-primary-hover transition-colors"
+                  >
+                    {dict.services.book_cta}
+                    <ArrowUpRight
+                      className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                      strokeWidth={2.5}
+                    />
+                  </Link>
+                )}
                 {navItems.length > 1 && (
                   <a
                     href="#overview"
@@ -853,32 +895,36 @@ async function ChildDetail({
         </section>
       )}
 
-      {/* CTA */}
-      <section className="px-3 pb-3 sm:px-5 sm:pb-5">
-        <div className="bg-forest-grain mx-auto max-w-5xl rounded-[24px] px-8 py-10 text-center text-white sm:rounded-[32px] sm:px-12 sm:py-14">
-          <p className="font-script text-[24px] leading-none text-primary sm:text-[30px]">
-            {dict.brand.name}
-          </p>
-          <h2 className="mt-2 text-[24px] font-extrabold uppercase tracking-tight sm:text-[32px]">
-            {dict.services.book_cta}
-          </h2>
-          <Link
-            href={bookHref}
-            className="group mt-6 inline-flex items-center gap-3 rounded-full bg-primary py-2.5 pl-7 pr-3 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
-          >
-            {dict.home.hero_schedule_btn}
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
-              <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-            </span>
-          </Link>
-        </div>
-      </section>
+      {/* CTA — hidden when this child isn't bookable online */}
+      {isBookable && (
+        <section className="px-3 pb-3 sm:px-5 sm:pb-5">
+          <div className="bg-forest-grain mx-auto max-w-5xl rounded-[24px] px-8 py-10 text-center text-white sm:rounded-[32px] sm:px-12 sm:py-14">
+            <p className="font-script text-[24px] leading-none text-primary sm:text-[30px]">
+              {dict.brand.name}
+            </p>
+            <h2 className="mt-2 text-[24px] font-extrabold uppercase tracking-tight sm:text-[32px]">
+              {dict.services.book_cta}
+            </h2>
+            <Link
+              href={bookHref}
+              className="group mt-6 inline-flex items-center gap-3 rounded-full bg-primary py-2.5 pl-7 pr-3 text-[14px] font-semibold text-white hover:bg-primary-hover transition-colors"
+            >
+              {dict.home.hero_schedule_btn}
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-primary transition-transform group-hover:translate-x-0.5">
+                <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+            </Link>
+          </div>
+        </section>
+      )}
 
-      <StickyBookCTA
-        href={bookHref}
-        label={dict.services.book_cta}
-        price={priceFormatted}
-      />
+      {isBookable && (
+        <StickyBookCTA
+          href={bookHref}
+          label={dict.services.book_cta}
+          price={priceFormatted}
+        />
+      )}
     </div>
   );
 }

@@ -2,7 +2,10 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
-import { listServicesByParentTree } from "@/lib/queries/catalog";
+import {
+  listServicesByParentTree,
+  listFeaturedServicesPublic,
+} from "@/lib/queries/catalog";
 import {
   ServicesBrowser,
   type CatalogGroup,
@@ -47,51 +50,59 @@ export default async function ServicesPage({
   const isMn = lang === "mn";
   const fromWord = dict.services.from_price;
 
-  const tree = await listServicesByParentTree();
+  const [tree, featuredRows] = await Promise.all([
+    listServicesByParentTree(),
+    listFeaturedServicesPublic(),
+  ]);
 
-  // Build one group per parent. If a parent has children, the section shows
-  // its children (the catalog mirror). If it has no children, the section
-  // shows the parent itself as the only card so it isn't orphaned.
-  const groups: CatalogGroup[] = tree
-    .map(({ parent, children }) => {
-      const items =
-        children.length > 0
-          ? children.map((c) => toCardItem(c, isMn, fromWord))
-          : [toCardItem(parent, isMn, fromWord)];
-      // Inherit cheapest child price for the parent card when needed.
-      if (children.length > 0 && parent.price_cents == null) {
-        const cheapestKid = children
-          .map((c) => c.price_cents)
-          .filter((v): v is number => v != null && v > 0)
-          .sort((a, b) => a - b)[0];
-        if (cheapestKid && items.length > 0 && !items[0].priceLabel) {
-          // best-effort min-price fallback for groups whose children all
-          // have prices but the parent itself was missing one.
-          items[0] = {
-            ...items[0],
-            priceLabel: `${fromWord} ${(cheapestKid / 100).toLocaleString()}₮`,
-          };
-        }
-      }
-      return {
-        parentSlug: parent.slug,
-        parentTitle: isMn ? parent.name_mn : parent.name_en,
-        description: isMn ? parent.description_mn : parent.description_en,
-        items,
-      };
-    })
-    .filter((g) => g.items.length > 0);
+  // Categories (parents with children) become their own section showing
+  // child cards. Top-level leaves are bucketed into a single "Бусад"
+  // section at the end so each leaf doesn't get its own redundant header.
+  const leafItems: ServiceCardItem[] = [];
+  const groups: CatalogGroup[] = [];
 
-  // Pick a single featured service from across all groups. Prefer one
-  // explicitly tagged is_featured; fall back to first item of first group.
-  let featured: ServiceCardItem | null = null;
-  for (const g of groups) {
-    const hit = g.items.find((it) => it.isFeatured);
-    if (hit) {
-      featured = hit;
-      break;
+  for (const { parent, children } of tree) {
+    if (children.length === 0) {
+      leafItems.push(toCardItem(parent, isMn, fromWord));
+      continue;
     }
+    const items = children.map((c) => toCardItem(c, isMn, fromWord));
+    // Inherit cheapest child price for the parent card when needed.
+    if (parent.price_cents == null) {
+      const cheapestKid = children
+        .map((c) => c.price_cents)
+        .filter((v): v is number => v != null && v > 0)
+        .sort((a, b) => a - b)[0];
+      if (cheapestKid && items.length > 0 && !items[0].priceLabel) {
+        items[0] = {
+          ...items[0],
+          priceLabel: `${fromWord} ${(cheapestKid / 100).toLocaleString()}₮`,
+        };
+      }
+    }
+    groups.push({
+      parentSlug: parent.slug,
+      parentTitle: isMn ? parent.name_mn : parent.name_en,
+      description: isMn ? parent.description_mn : parent.description_en,
+      items,
+    });
   }
+
+  if (leafItems.length > 0) {
+    groups.push({
+      parentSlug: "__leaves__",
+      parentTitle: isMn ? "Бусад үйлчилгээ" : "Other services",
+      description: null,
+      items: leafItems,
+    });
+  }
+
+  // Surface every service flagged is_featured — same truth driving /featured
+  // and the Messenger bot. Fetched directly (not walked from the catalog
+  // tree) so featured PARENTS aren't hidden behind their children.
+  const featured: ServiceCardItem[] = featuredRows.map((s) =>
+    toCardItem(s, isMn, fromWord),
+  );
 
   return (
     <div className="bg-bg pb-2">

@@ -1,0 +1,12 @@
+# Local source artifacts not needed in the deployment bundle.
+# Vercel already ignores .git, node_modules, and .next.
+
+/data/
+/docs/
+/scripts/
+/supabase/
+*.docx
+*.tsbuildinfo
+THIRD_PARTY_BOOKING_API_MN.md
+README.md
+bun.lock

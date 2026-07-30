@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 const SELECT = `
   id, slug, department_id, name_mn, name_en, description_mn, description_en,
-  category, price_cents, currency, duration_min, is_active, sort_order,
+  category, price_cents, currency, duration_min, show_duration, is_active, sort_order,
   created_at, updated_at,
   department:departments!inner ( id, slug, name_mn, name_en )
 `;

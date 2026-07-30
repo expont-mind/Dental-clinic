@@ -22,7 +22,7 @@ export function StepIndicator({
 
   return (
     <div className={wrapper}>
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-5 pt-16 pb-5 sm:flex-row sm:justify-center sm:gap-5 sm:px-8 sm:pt-20 sm:pb-6">
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-5 pt-5 pb-4 sm:flex-row sm:justify-center sm:gap-5 sm:px-8 sm:pt-6 sm:pb-5">
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">
           {stepWord} {current} / 4
         </p>

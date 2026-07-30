@@ -107,8 +107,8 @@ export default async function LoginPage({
               <LoginForm
                 lang={lang}
                 dict={{
-                  email: dict.auth.email,
-                  email_ph: dict.auth.email_ph,
+                  phone: dict.auth.phone,
+                  phone_ph: dict.auth.phone_ph,
                   password: dict.auth.password,
                   password_ph: dict.auth.password_ph,
                   forgot: dict.auth.forgot,

@@ -36,9 +36,10 @@ export default async function DoctorsPage({
           </h1>
         </header>
 
-        {/* Filter chips */}
+        {/* Filter chips — hidden when there is only one department (single-clinic setup) */}
         <nav
           aria-label="Filter by department"
+          hidden={departments.length <= 1}
           className="mt-8 flex gap-2 overflow-x-auto px-1 pb-2 sm:mt-10 sm:justify-center sm:overflow-visible sm:px-0 sm:pb-0 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <Link

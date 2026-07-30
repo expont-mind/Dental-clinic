@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { LangToggle } from "./LangToggle";
 import { MobileMenu } from "./MobileMenu";
+import { getCurrentUser, userSignOutAction } from "@/lib/actions/auth";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type Props = { lang: string; dict: Dictionary };
@@ -38,7 +39,8 @@ function NavItem({ link }: { link: NavLink }) {
   );
 }
 
-export function Header({ lang, dict }: Props) {
+export async function Header({ lang, dict }: Props) {
+  const user = await getCurrentUser();
   const leftLinks: NavLink[] = [
     { href: `/${lang}/services`, label: dict.nav.services },
     { href: `/${lang}/featured`, label: dict.nav.featured },
@@ -63,19 +65,42 @@ export function Header({ lang, dict }: Props) {
             {dict.nav.top_banner}
           </p>
           <div className="flex shrink-0 items-center gap-3">
-            <Link
-              href={`/${lang}/login`}
-              className="text-[11px] font-semibold text-white/85 hover:text-primary transition-colors"
-            >
-              {dict.auth.login}
-            </Link>
-            <span aria-hidden className="h-3 w-px bg-white/20" />
-            <Link
-              href={`/${lang}/signup`}
-              className="text-[11px] font-semibold text-primary hover:text-white transition-colors"
-            >
-              {dict.auth.signup}
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href={`/${lang}/account`}
+                  className="inline-block max-w-[160px] truncate align-middle text-[11px] font-semibold text-white/85 hover:text-primary transition-colors"
+                >
+                  {user.name}
+                </Link>
+                <span aria-hidden className="h-3 w-px bg-white/20" />
+                <form action={userSignOutAction}>
+                  <input type="hidden" name="lang" value={lang} />
+                  <button
+                    type="submit"
+                    className="text-[11px] font-semibold text-white/85 hover:text-primary transition-colors"
+                  >
+                    {dict.auth.logout}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={`/${lang}/login`}
+                  className="text-[11px] font-semibold text-white/85 hover:text-primary transition-colors"
+                >
+                  {dict.auth.login}
+                </Link>
+                <span aria-hidden className="h-3 w-px bg-white/20" />
+                <Link
+                  href={`/${lang}/signup`}
+                  className="text-[11px] font-semibold text-primary hover:text-white transition-colors"
+                >
+                  {dict.auth.signup}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -85,10 +110,10 @@ export function Header({ lang, dict }: Props) {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-1 text-[11px]">
           <LangToggle current={lang} />
           <Link
-            href={`/${lang}/login`}
-            className="text-[11px] font-semibold text-primary hover:text-white transition-colors"
+            href={user ? `/${lang}/account` : `/${lang}/login`}
+            className="inline-block max-w-[45vw] truncate align-middle text-[11px] font-semibold text-primary hover:text-white transition-colors"
           >
-            {dict.auth.login}
+            {user ? user.name : dict.auth.login}
           </Link>
         </div>
       </div>
@@ -109,6 +134,12 @@ export function Header({ lang, dict }: Props) {
               signupLabel={dict.auth.signup}
               loginHref={`/${lang}/login`}
               signupHref={`/${lang}/signup`}
+              lang={lang}
+              user={user ? { name: user.name } : null}
+              accountLabel={dict.account.title}
+              accountHref={`/${lang}/account`}
+              logoutLabel={dict.auth.logout}
+              signOutAction={userSignOutAction}
             />
           </div>
 

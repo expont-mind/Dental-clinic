@@ -3,9 +3,7 @@ import { Manrope, Fraunces } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import "../../globals.css";
-import { cookies } from "next/headers";
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { DEV_ADMIN } from "@/lib/auth";
+import { getAdminUser } from "@/lib/auth";
 import { AdminSidebarLink } from "@/components/admin/AdminSidebarLink";
 import { Toaster } from "sonner";
 
@@ -40,14 +38,14 @@ const NAV = [
     icon: "M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM9 14h6M9 18h4",
   },
   {
-    href: "/admin/slots",
-    label: "Чөлөөт цагууд",
-    icon: "M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
-  },
-  {
     href: "/admin/feedback",
     label: "Санал хүсэлт",
     icon: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 9h8M8 13h6",
+  },
+  {
+    href: "/admin/bot",
+    label: "Бот",
+    icon: "M12 2a3 3 0 0 1 3 3v1h3a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1l-4 4v-4H6a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h3V5a3 3 0 0 1 3-3zM9 11h.01M15 11h.01",
   },
   {
     href: "/admin/team",
@@ -81,25 +79,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let isLoggedIn = false;
-  let userEmail: string | null = null;
-  let isDev = false;
-
-  const jar = await cookies();
-  if (jar.get(DEV_ADMIN.cookieName)?.value === "1") {
-    isLoggedIn = true;
-    isDev = true;
-    userEmail = DEV_ADMIN.email;
-  } else {
-    try {
-      const supabase = await createSupabaseServer();
-      const { data } = await supabase.auth.getUser();
-      isLoggedIn = Boolean(data.user);
-      userEmail = data.user?.email ?? null;
-    } catch {
-      isLoggedIn = false;
-    }
-  }
+  // Single source of truth for "is this an admin" — keeps the chrome in step
+  // with what assertAdmin/requireAdminUser enforce on pages and actions.
+  const admin = await getAdminUser();
+  const isLoggedIn = Boolean(admin);
+  const userEmail = admin?.email ?? null;
 
   const displayName = userEmail ? userEmail.split("@")[0] : "Admin";
 
@@ -231,14 +215,7 @@ export default async function AdminLayout({
                 </nav>
               </header>
 
-              <main className="flex-1">
-                {children}
-                {isDev && (
-                  <div className="fixed bottom-4 right-4 z-50 rounded-2xl bg-yellow-100 px-4 py-2 text-[11px] font-semibold text-yellow-900 shadow-lg ring-1 ring-yellow-300">
-                    ⚠️ Dev-горимоор нэвтэрсэн
-                  </div>
-                )}
-              </main>
+              <main className="flex-1">{children}</main>
             </div>
           </div>
         ) : (

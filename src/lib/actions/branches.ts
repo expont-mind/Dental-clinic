@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { assertAdmin, isSupabaseConfigured } from "@/lib/auth";
 import { translateError } from "@/lib/utils/translate-error";
 import { emitSync } from "@/lib/dentexgo/webhook";
 import type { ClinicHours } from "@/lib/supabase/types";
@@ -74,6 +74,8 @@ export async function createBranchAction(
   _prev: BranchFormState,
   formData: FormData,
 ): Promise<BranchFormState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured())
     return { error: "Supabase холбогдоогүй байна." };
   const values = readFields(formData);
@@ -127,6 +129,8 @@ export async function updateBranchAction(
   _prev: BranchFormState,
   formData: FormData,
 ): Promise<BranchFormState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured())
     return { error: "Supabase холбогдоогүй байна." };
 
@@ -168,6 +172,7 @@ export async function updateBranchAction(
 }
 
 export async function toggleBranchActiveAction(formData: FormData) {
+  if (await assertAdmin()) return;
   if (!isSupabaseConfigured()) return;
   const id = String(formData.get("id") || "").trim();
   const next = formData.get("active") === "true";

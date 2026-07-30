@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { getDentists, getServices, getBranches } from "@/lib/itdoctor/client";
+import { assertAdmin } from "@/lib/auth";
 
 function slugify(s: string): string {
   return (
@@ -22,6 +23,8 @@ export type SyncResult = {
   dentistsSynced: number;
   servicesSynced: number;
   deactivated: number;
+  /** Names of the records this run deactivated, so the admin sees what moved. */
+  deactivatedNames?: string[];
 };
 
 export async function syncFromITDoctorAction(): Promise<SyncResult> {
@@ -30,7 +33,11 @@ export async function syncFromITDoctorAction(): Promise<SyncResult> {
     dentistsSynced: 0,
     servicesSynced: 0,
     deactivated: 0,
+    deactivatedNames: [],
   };
+
+  const authErr = await assertAdmin();
+  if (authErr) return { ...result, error: authErr };
 
   try {
     const supabase = createSupabaseAdmin();
@@ -49,6 +56,17 @@ export async function syncFromITDoctorAction(): Promise<SyncResult> {
 
     // ---- Sync Dentists ----
     const itDentists = await getDentists();
+
+    // An empty upstream list is almost always a transient iDoctor problem, not
+    // "the clinic has no dentists". Deactivating on it would empty the site, so
+    // bail out and let the admin retry.
+    if (itDentists.length === 0) {
+      return {
+        ...result,
+        error:
+          "IT Doctor эмчийн хоосон хариу буцаалаа. Sync-ийг зогсоов — дараа дахин оролдоно уу.",
+      };
+    }
 
     for (const d of itDentists) {
       const nameMn = `${d.lastname} ${d.firstname}`;
@@ -91,6 +109,13 @@ export async function syncFromITDoctorAction(): Promise<SyncResult> {
 
     // ---- Sync Services ----
     const itServices = await getServices();
+    if (itServices.length === 0) {
+      return {
+        ...result,
+        error:
+          "IT Doctor үйлчилгээний хоосон хариу буцаалаа. Sync-ийг зогсоов — дараа дахин оролдоно уу.",
+      };
+    }
 
     for (const s of itServices) {
       const { data: existing } = await supabase
@@ -124,46 +149,48 @@ export async function syncFromITDoctorAction(): Promise<SyncResult> {
       result.servicesSynced++;
     }
 
-    // ---- Deactivate old records without IT Doctor IDs ----
-    const itDentistIds = itDentists.map((d) => d.id);
-    const itServiceIds = itServices.map((s) => s.id);
+    // ---- Deactivate records that VANISHED upstream ----
+    //
+    // Only rows that carry an iDoctor id are in scope. A NULL id means the row
+    // was authored by hand in this admin panel — services created here never
+    // get an `itdoctor_service_id` (see the note in actions/services.ts), so
+    // treating NULL as "not in iDoctor, deactivate" would switch off the entire
+    // hand-curated catalogue on every sync.
+    const itDentistIds = new Set(itDentists.map((d) => d.id));
+    const itServiceIds = new Set(itServices.map((s) => s.id));
 
-    // Deactivate doctors not linked to IT Doctor
-    const { data: oldDoctors } = await supabase
+    const { data: linkedDoctors } = await supabase
       .from("doctors")
-      .select("id, itdoctor_dentist_id")
-      .eq("is_active", true);
+      .select("id, name_mn, itdoctor_dentist_id")
+      .eq("is_active", true)
+      .not("itdoctor_dentist_id", "is", null);
 
-    for (const doc of oldDoctors ?? []) {
-      if (
-        doc.itdoctor_dentist_id === null ||
-        !itDentistIds.includes(doc.itdoctor_dentist_id)
-      ) {
-        await supabase
-          .from("doctors")
-          .update({ is_active: false })
-          .eq("id", doc.id);
-        result.deactivated++;
-      }
+    for (const doc of (linkedDoctors ?? []) as {
+      id: string;
+      name_mn: string | null;
+      itdoctor_dentist_id: number;
+    }[]) {
+      if (itDentistIds.has(doc.itdoctor_dentist_id)) continue;
+      await supabase.from("doctors").update({ is_active: false }).eq("id", doc.id);
+      result.deactivated++;
+      result.deactivatedNames!.push(doc.name_mn ?? `эмч ${doc.id}`);
     }
 
-    // Deactivate services not linked to IT Doctor
-    const { data: oldServices } = await supabase
+    const { data: linkedServices } = await supabase
       .from("services")
-      .select("id, itdoctor_service_id")
-      .eq("is_active", true);
+      .select("id, name_mn, itdoctor_service_id")
+      .eq("is_active", true)
+      .not("itdoctor_service_id", "is", null);
 
-    for (const svc of oldServices ?? []) {
-      if (
-        svc.itdoctor_service_id === null ||
-        !itServiceIds.includes(svc.itdoctor_service_id)
-      ) {
-        await supabase
-          .from("services")
-          .update({ is_active: false })
-          .eq("id", svc.id);
-        result.deactivated++;
-      }
+    for (const svc of (linkedServices ?? []) as {
+      id: string;
+      name_mn: string | null;
+      itdoctor_service_id: number;
+    }[]) {
+      if (itServiceIds.has(svc.itdoctor_service_id)) continue;
+      await supabase.from("services").update({ is_active: false }).eq("id", svc.id);
+      result.deactivated++;
+      result.deactivatedNames!.push(svc.name_mn ?? `үйлчилгээ ${svc.id}`);
     }
 
     result.ok = true;

@@ -3,7 +3,7 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
-import { isSupabaseConfigured } from "@/lib/auth";
+import { assertAdmin, isSupabaseConfigured } from "@/lib/auth";
 import { translateError } from "@/lib/utils/translate-error";
 import { emitSync } from "@/lib/dentexgo/webhook";
 import type { ClinicHours } from "@/lib/supabase/types";
@@ -30,6 +30,8 @@ export async function updateClinicProfileAction(
   _prev: ClinicProfileState,
   formData: FormData,
 ): Promise<ClinicProfileState> {
+  const authErr = await assertAdmin();
+  if (authErr) return { error: authErr };
   if (!isSupabaseConfigured())
     return { error: "Supabase холбогдоогүй байна." };
 
