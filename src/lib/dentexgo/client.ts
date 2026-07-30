@@ -94,6 +94,15 @@ export function isConfigured(): boolean {
 
 // ---------- Internal fetch helper ----------
 
+/**
+ * Per-request timeout. Dentexgo sits on the critical path of the admin
+ * dashboard's server render, and a hung upstream (connection accepted, no
+ * response) would otherwise block the whole page until the platform's function
+ * timeout. The abort surfaces as a thrown error, which every caller already
+ * handles as a failed section.
+ */
+const REQUEST_TIMEOUT_MS = 5000;
+
 /** Shared by the sibling domain modules (conversations.ts, insights.ts). */
 export async function apiFetch<T>(
   path: string,
@@ -135,6 +144,7 @@ export async function apiFetch<T>(
     // The admin API isn't cacheable at the platform layer — staff expect
     // fresh data on every page load.
     cache: "no-store",
+    signal: init?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   // 204 No Content (DELETE)

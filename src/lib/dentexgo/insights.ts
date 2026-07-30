@@ -80,7 +80,17 @@ export const INTENT_LABELS_MN: Record<string, string> = {
 export async function getInsightsSummary(
   days = 30,
 ): Promise<InsightsSummary> {
-  return apiFetch<InsightsSummary>("/insights/summary", {
+  const data = await apiFetch<InsightsSummary>("/insights/summary", {
     searchParams: { days },
   });
+  // Normalize at the boundary: a malformed 200 must not crash the dashboard's
+  // server render. Every consumer can then treat these as present.
+  return {
+    days: data.days ?? days,
+    intents: data.intents ?? [],
+    languages: data.languages ?? [],
+    needsHumanRate: data.needsHumanRate ?? { needsHuman: 0, total: 0, rate: 0 },
+    faqGaps: data.faqGaps ?? [],
+    usage: data.usage ?? [],
+  };
 }

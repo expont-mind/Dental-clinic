@@ -1,9 +1,10 @@
 import "server-only";
-import { DentexgoError, isConfigured } from "@/lib/dentexgo/client";
+import { isConfigured } from "@/lib/dentexgo/client";
 import {
   listConversations,
   type DentexgoConversation,
 } from "@/lib/dentexgo/conversations";
+import { describeDentexgoError } from "@/lib/dentexgo/errors";
 import {
   getInsightsSummary,
   type InsightsSummary,
@@ -22,19 +23,6 @@ export type BotDashboardData = {
   insights: InsightsSummary | null;
   insightsError: BotSectionError | null;
 };
-
-function toSectionError(e: unknown): BotSectionError {
-  if (e instanceof DentexgoError) {
-    if (e.code === "NO_AI_MODULE") {
-      return { message: "AI модуль активгүй байна.", code: e.code };
-    }
-    return { message: `${e.code}: ${e.message}`, code: e.code };
-  }
-  return {
-    message: "Dentexgo-той холбогдож чадсангүй.",
-    code: "NETWORK_ERROR",
-  };
-}
 
 /**
  * First-paint data for the dashboard's bot sections. Both calls are settled
@@ -69,11 +57,13 @@ export async function loadBotDashboardData(): Promise<BotDashboardData> {
     configured: true,
     queue: queueRes.status === "fulfilled" ? queueRes.value : [],
     queueError:
-      queueRes.status === "rejected" ? toSectionError(queueRes.reason) : null,
+      queueRes.status === "rejected"
+        ? describeDentexgoError(queueRes.reason)
+        : null,
     insights: insightsRes.status === "fulfilled" ? insightsRes.value : null,
     insightsError:
       insightsRes.status === "rejected"
-        ? toSectionError(insightsRes.reason)
+        ? describeDentexgoError(insightsRes.reason)
         : null,
   };
 }

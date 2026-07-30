@@ -61,7 +61,9 @@ export function NeedsHumanQueue({
   const [threadUrls, setThreadUrls] = useState(initialThreadUrls);
   const [error, setError] = useState(initialError);
   const [now, setNow] = useState(serverNow);
-  const [lastSync, setLastSync] = useState<number | null>(null);
+  // The rows came straight from the server at render time, so the queue is
+  // already fresh as of serverNow — not "never synced" until the first poll.
+  const [lastSync, setLastSync] = useState<number | null>(serverNow);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   /**
@@ -78,12 +80,15 @@ export function NeedsHumanQueue({
     setRefreshing(false);
     // Inside a callback, not render — Date.now() is fine here.
     setNow(Date.now());
+    // A mutation (take-over/hand-back) that landed after this poll started
+    // makes the response stale — on both the success and failure paths, since
+    // an in-flight poll's error is just as stale as its data would be.
+    if (mutationRef.current !== seenMutations) return;
     if (!res.ok) {
       // Keep whatever is on screen — a failed poll must never blank the queue.
       setError(res.error);
       return;
     }
-    if (mutationRef.current !== seenMutations) return;
     setError(null);
     setRows(res.conversations);
     setThreadUrls(res.threadUrls);

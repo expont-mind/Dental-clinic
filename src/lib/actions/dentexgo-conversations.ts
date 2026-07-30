@@ -1,12 +1,14 @@
 "use server";
 
 import { assertAdmin } from "@/lib/auth";
-import { DentexgoError, isConfigured } from "@/lib/dentexgo/client";
+import { isConfigured } from "@/lib/dentexgo/client";
 import {
   listConversations,
   patchConversation,
+  type ConversationPatch,
   type DentexgoConversation,
 } from "@/lib/dentexgo/conversations";
+import { describeDentexgoError } from "@/lib/dentexgo/errors";
 import { threadUrl } from "@/lib/messenger/link";
 
 /**
@@ -34,30 +36,6 @@ export type QueueResult =
 export type ConversationActionResult =
   | { ok: true; conversation: DentexgoConversation; pausedHours?: number }
   | { ok: false; error: string };
-
-/** Turn any thrown value into a Mongolian message plus the machine code, so
- * callers can branch on `code` without parsing prose. */
-function describe(e: unknown): { error: string; code?: string } {
-  if (e instanceof DentexgoError) {
-    if (e.code === "CLINIC_NOT_CONFIGURED") {
-      return { error: "Dentexgo тохиргоо ороогүй байна.", code: e.code };
-    }
-    if (e.code === "NO_AI_MODULE") {
-      return { error: "AI модуль активгүй байна.", code: e.code };
-    }
-    // Any other code: the API's own `message` is English prose, which must not
-    // reach the Mongolian admin UI. Surface a Mongolian sentence and keep the
-    // machine code visible so staff can quote it to the platform operator.
-    return {
-      error: `Dentexgo-ийн алдаа (${e.code}). Дахин оролдоно уу.`,
-      code: e.code,
-    };
-  }
-  return {
-    error: "Dentexgo-той холбогдож чадсангүй.",
-    code: "NETWORK_ERROR",
-  };
-}
 
 /**
  * The needs-human queue. Polled every 30s by NeedsHumanQueue — a server action
@@ -89,7 +67,28 @@ export async function fetchNeedsHumanAction(): Promise<QueueResult> {
     return { ok: true, conversations, threadUrls };
   } catch (e) {
     console.error("[fetchNeedsHumanAction]", e);
-    return { ok: false, ...describe(e) };
+    const { message, code } = describeDentexgoError(e);
+    return { ok: false, error: message, code };
+  }
+}
+
+/**
+ * Shared by takeOverAction and handBackAction: validates the id, sends the
+ * PATCH, and classifies any failure. `logTag` keeps server logs attributable
+ * to the action that triggered them even though the wrapper is shared.
+ */
+async function runPatch(
+  id: string,
+  patch: ConversationPatch,
+  logTag: string,
+): Promise<ConversationActionResult> {
+  if (!id) return { ok: false, error: "ID байхгүй байна." };
+  try {
+    const conversation = await patchConversation(id, patch);
+    return { ok: true, conversation };
+  } catch (e) {
+    console.error(logTag, e);
+    return { ok: false, error: describeDentexgoError(e).message };
   }
 }
 
@@ -99,16 +98,13 @@ export async function takeOverAction(
 ): Promise<ConversationActionResult> {
   const authErr = await assertAdmin();
   if (authErr) return { ok: false, error: authErr };
-  if (!id) return { ok: false, error: "ID байхгүй байна." };
-  try {
-    const conversation = await patchConversation(id, {
-      pause_bot_hours: TAKE_OVER_HOURS,
-    });
-    return { ok: true, conversation, pausedHours: TAKE_OVER_HOURS };
-  } catch (e) {
-    console.error("[takeOverAction]", e);
-    return { ok: false, error: describe(e).error };
-  }
+  const res = await runPatch(
+    id,
+    { pause_bot_hours: TAKE_OVER_HOURS },
+    "[takeOverAction]",
+  );
+  if (!res.ok) return res;
+  return { ...res, pausedHours: TAKE_OVER_HOURS };
 }
 
 /** Hand the thread back to the bot, clearing BOTH guards in one PATCH as the
@@ -118,15 +114,9 @@ export async function handBackAction(
 ): Promise<ConversationActionResult> {
   const authErr = await assertAdmin();
   if (authErr) return { ok: false, error: authErr };
-  if (!id) return { ok: false, error: "ID байхгүй байна." };
-  try {
-    const conversation = await patchConversation(id, {
-      needs_human: false,
-      pause_bot_hours: null,
-    });
-    return { ok: true, conversation };
-  } catch (e) {
-    console.error("[handBackAction]", e);
-    return { ok: false, error: describe(e).error };
-  }
+  return runPatch(
+    id,
+    { needs_human: false, pause_bot_hours: null },
+    "[handBackAction]",
+  );
 }
