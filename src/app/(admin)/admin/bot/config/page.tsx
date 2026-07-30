@@ -74,6 +74,32 @@ export default async function AdminBotConfigPage() {
 
         {data && !errorMessage && (
           <>
+            {/* Comment → DM status. Read-only by design: the contract gates
+                enabling it behind a platform-operator step (subscribing the
+                Facebook Page to feed events), so there is no API to flip it. */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] bg-white p-5 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.18)] sm:px-8">
+              <div>
+                <p className="text-[13px] font-bold text-[#0f172a]">
+                  Facebook постын коммент → хувийн зурвас
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#6b7280]">
+                  {data.commentToDmEnabled
+                    ? "Коммент бичсэн хүнд бот автоматаар хувийн зурвас илгээнэ."
+                    : "Одоогоор унтраалттай. Асаахын тулд Dentexgo-ийн операторт хандана уу — API-аар нээх боломжгүй."}
+                </p>
+              </div>
+              <span
+                className={
+                  "shrink-0 rounded-full px-3 py-1 text-[11px] font-bold " +
+                  (data.commentToDmEnabled
+                    ? "bg-success/10 text-success"
+                    : "bg-[#f3f4f6] text-[#6b7280]")
+                }
+              >
+                {data.commentToDmEnabled ? "Актив" : "Унтраалттай"}
+              </span>
+            </div>
+
             {/* Persona form */}
             <div className="rounded-[22px] bg-white p-6 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.18)] sm:p-8">
               <BotConfigForm
