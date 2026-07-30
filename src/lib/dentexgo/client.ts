@@ -94,7 +94,8 @@ export function isConfigured(): boolean {
 
 // ---------- Internal fetch helper ----------
 
-async function apiFetch<T>(
+/** Shared by the sibling domain modules (conversations.ts, insights.ts). */
+export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { searchParams?: Record<string, string | number | undefined> },
 ): Promise<T> {
