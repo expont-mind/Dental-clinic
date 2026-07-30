@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   fetchNeedsHumanAction,
@@ -64,8 +64,15 @@ export function NeedsHumanQueue({
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  /**
+   * Bumped by every successful action. A poll that began before a mutation
+   * landed is already stale — applying it would resurrect a row the admin just
+   * resolved, so its result is dropped and the next poll reflects the server.
+   */
+  const mutationRef = useRef(0);
 
   const refresh = useCallback(async () => {
+    const seenMutations = mutationRef.current;
     setRefreshing(true);
     const res = await fetchNeedsHumanAction();
     setRefreshing(false);
@@ -76,6 +83,7 @@ export function NeedsHumanQueue({
       setError(res.error);
       return;
     }
+    if (mutationRef.current !== seenMutations) return;
     setError(null);
     setRows(res.conversations);
     setThreadUrls(res.threadUrls);
@@ -94,10 +102,21 @@ export function NeedsHumanQueue({
     fn: (id: string) => Promise<ConversationActionResult>,
   ): Promise<ConversationActionResult> {
     setBusyId(id);
-    const res = await fn(id);
-    setBusyId(null);
-    if (!res.ok) toast.error(res.error);
-    return res;
+    try {
+      const res = await fn(id);
+      if (res.ok) mutationRef.current += 1;
+      else toast.error(res.error);
+      return res;
+    } catch (e) {
+      // A Server Action transport failure, not a Dentexgo error — the actions
+      // handle those themselves and return { ok: false }.
+      console.error("[NeedsHumanQueue] action failed:", e);
+      const error = "Үйлдэл гүйцэтгэж чадсангүй. Дахин оролдоно уу.";
+      toast.error(error);
+      return { ok: false, error };
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function handleTakeOver(id: string) {
