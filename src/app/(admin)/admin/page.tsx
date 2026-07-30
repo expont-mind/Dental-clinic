@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { requireAdminUser } from "@/lib/auth";
 import { getAdminBookingStats } from "@/lib/queries/admin";
+import { loadBotDashboardData } from "@/lib/queries/dentexgo-dashboard";
+import { threadUrl } from "@/lib/messenger/link";
+import { NeedsHumanQueue } from "@/components/admin/NeedsHumanQueue";
 
 const STAT_TONES: Record<
   string,
@@ -105,6 +108,20 @@ export default async function AdminDashboardPage() {
     // dev bypass / supabase unreachable — show zeros
   }
 
+  const bot = await loadBotDashboardData();
+  // threadUrl() reads env vars, so the URL has to be resolved on the server and
+  // handed to the client component as data.
+  const threadUrls: Record<string, string> = {};
+  for (const c of bot.queue) {
+    const url = threadUrl(c);
+    if (url) threadUrls[c.id] = url;
+  }
+  // Baseline for the "waiting N minutes" labels. Read here, not in the client
+  // component's render, which react-hooks/purity forbids — the same reason
+  // src/app/(public)/[lang]/account/page.tsx carries this disable comment.
+  // eslint-disable-next-line react-hooks/purity
+  const serverNow = Date.now();
+
   const today = new Date();
   const dateLabel = today.toLocaleDateString("mn-MN", {
     year: "numeric",
@@ -158,6 +175,15 @@ export default async function AdminDashboardPage() {
             )}
           </p>
         </section>
+
+        {bot.configured && (
+          <NeedsHumanQueue
+            initialConversations={bot.queue}
+            initialError={bot.queueError?.message ?? null}
+            initialThreadUrls={threadUrls}
+            serverNow={serverNow}
+          />
+        )}
 
         {/* Stats */}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
