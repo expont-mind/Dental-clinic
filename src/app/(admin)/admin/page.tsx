@@ -4,6 +4,7 @@ import { getAdminBookingStats } from "@/lib/queries/admin";
 import { loadBotDashboardData } from "@/lib/queries/dentexgo-dashboard";
 import { threadUrl } from "@/lib/messenger/link";
 import { NeedsHumanQueue } from "@/components/admin/NeedsHumanQueue";
+import { BotInsightsStrip } from "@/components/admin/BotInsightsStrip";
 
 const STAT_TONES: Record<
   string,
@@ -224,6 +225,13 @@ export default async function AdminDashboardPage() {
             icon="M3 21V8l9-5 9 5v13M9 21V12h6v9"
           />
         </section>
+
+        {bot.configured && (
+          <BotInsightsStrip
+            insights={bot.insights}
+            error={bot.insightsError}
+          />
+        )}
 
         {/* Bottom quick links */}
         <section className="grid gap-3 lg:grid-cols-2">
