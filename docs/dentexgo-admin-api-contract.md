@@ -36,12 +36,12 @@ The platform operator rotates secrets from the Dentexgo operator console (`/oper
 
 ### Errors from auth
 
-| HTTP | `code` | When |
-|---|---|---|
-| 401 | `UNAUTHENTICATED` | Missing or malformed `Authorization` header |
-| 401 | `INVALID_TOKEN` | Bearer token doesn't match this clinic's shared secret |
-| 404 | `CLINIC_NOT_FOUND` | Slug doesn't resolve to an active clinic |
-| 409 | `CLINIC_NOT_CONFIGURED` | Clinic exists but has no shared secret (operator action needed) |
+| HTTP | `code`                  | When                                                            |
+| ---- | ----------------------- | --------------------------------------------------------------- |
+| 401  | `UNAUTHENTICATED`       | Missing or malformed `Authorization` header                     |
+| 401  | `INVALID_TOKEN`         | Bearer token doesn't match this clinic's shared secret          |
+| 404  | `CLINIC_NOT_FOUND`      | Slug doesn't resolve to an active clinic                        |
+| 409  | `CLINIC_NOT_CONFIGURED` | Clinic exists but has no shared secret (operator action needed) |
 
 ## Error response shape
 
@@ -51,7 +51,9 @@ Every non-2xx response has the same body:
 {
   "error": "Human-readable message.",
   "code": "MACHINE_CODE",
-  "details": { /* optional, only for validation errors */ }
+  "details": {
+    /* optional, only for validation errors */
+  }
 }
 ```
 
@@ -120,13 +122,13 @@ curl -X POST \
 
 Body schema:
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `rowId` | string ≤128 | no | Stable id you choose. Auto-generated as `api-<ts>-<rand>` if omitted. Used for later PATCH/DELETE. |
-| `qMn` | string ≤1000 | **yes** | Mongolian question |
-| `aMn` | string ≤4000 | **yes** | Mongolian answer |
-| `qEn` | string ≤1000 | no | English question. Auto-translated if blank. |
-| `aEn` | string ≤4000 | no | English answer. Auto-translated if blank. |
+| Field   | Type         | Required | Notes                                                                                              |
+| ------- | ------------ | -------- | -------------------------------------------------------------------------------------------------- |
+| `rowId` | string ≤128  | no       | Stable id you choose. Auto-generated as `api-<ts>-<rand>` if omitted. Used for later PATCH/DELETE. |
+| `qMn`   | string ≤1000 | **yes**  | Mongolian question                                                                                 |
+| `aMn`   | string ≤4000 | **yes**  | Mongolian answer                                                                                   |
+| `qEn`   | string ≤1000 | no       | English question. Auto-translated if blank.                                                        |
+| `aEn`   | string ≤4000 | no       | English answer. Auto-translated if blank.                                                          |
 
 Response: `201 Created`
 
@@ -267,13 +269,181 @@ Bundle of every insight in one round-trip. Useful for clinic-admin dashboards th
 ```json
 {
   "days": 30,
-  "intents":          [ /* same as /insights/intents */ ],
-  "languages":        [ /* same as /insights/languages */ ],
-  "needsHumanRate":   { /* same as /insights/needs-human-rate */ },
-  "faqGaps":          [ /* same as /insights/faq-gaps */ ],
-  "usage":            [ /* same as /insights/usage */ ]
+  "intents": [
+    /* same as /insights/intents */
+  ],
+  "languages": [
+    /* same as /insights/languages */
+  ],
+  "needsHumanRate": {
+    /* same as /insights/needs-human-rate */
+  },
+  "faqGaps": [
+    /* same as /insights/faq-gaps */
+  ],
+  "usage": [
+    /* same as /insights/usage */
+  ]
 }
 ```
+
+---
+
+### AI Credits
+
+The AI chatbot is metered in MNT. Each AI reply consumes credit proportional to tokens used. Each billing period, your AI tier grants you a fresh credit allowance (Starter ~₮50K, Growth ~₮150K, Scale ~₮400K). When the balance reaches zero, **the bot stops auto-replying** — patient messages still land in your inbox so staff can respond manually. Top up via QPay at any time to buy headroom.
+
+> Endpoints in this section require an **active `ai_chatbot` subscription module**. Website-only clinics get `409 NO_AI_MODULE` on every call.
+
+#### `GET /credits/balance`
+
+Current MNT balance + recent burn + pause state.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  https://dentexgo.mn/api/v1/clinics/dentaris/credits/balance
+```
+
+```json
+{
+  "balanceMnt": 142000,
+  "burn30dMnt": 312000,
+  "estDaysRemaining": 14,
+  "paused": false,
+  "pausedReason": null
+}
+```
+
+- `balanceMnt` — current credit, in MNT (integer).
+- `burn30dMnt` — total debited over the last 30 days.
+- `estDaysRemaining` — `floor(balanceMnt / (burn30dMnt / 30))`, or `null` if no recent activity.
+- `paused` — `true` iff the bot is currently paused due to empty credit.
+- `pausedReason` — `"credit_empty"` when paused; `null` otherwise. Operator-initiated pauses use a different mechanism.
+
+#### `POST /credits/topup`
+
+Create a QPay invoice for an MNT amount. Returns the QR + bank deep-links to render in your admin.
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "amountMnt": 200000, "customerName": "Dentaris admin" }' \
+  https://dentexgo.mn/api/v1/clinics/dentaris/credits/topup
+```
+
+Body schema:
+
+| Field          | Type       | Required | Notes                        |
+| -------------- | ---------- | -------- | ---------------------------- |
+| `amountMnt`    | integer    | yes      | Min `10000`, max `10000000`. |
+| `customerName` | string ≤80 | no       | Shown to the payer in QPay.  |
+
+Response: `201 Created`
+
+```json
+{
+  "invoiceId": "9b1c...e8a7",
+  "amountMnt": 200000,
+  "qrImage": "data:image/png;base64,iVBOR...",
+  "bankLinks": [
+    { "name": "Khan Bank", "logo": "https://...", "link": "khanbank://..." },
+    { "name": "TDB", "logo": "https://...", "link": "tdb://..." }
+  ]
+}
+```
+
+Render `qrImage` directly (`<img src={qrImage} />`); offer `bankLinks` as buttons. Most patients tap a bank deep-link on mobile; QR is the fallback for desktop.
+
+Credit is **not** added immediately. When QPay confirms payment, the balance updates asynchronously (typically <30 s). Poll `GET /credits/topup/:invoiceId` to know when to refresh your UI.
+
+#### `GET /credits/topup/:invoiceId`
+
+Poll status for a top-up. Safe to call repeatedly.
+
+```json
+{
+  "invoiceId": "9b1c...e8a7",
+  "status": "paid",
+  "amountMnt": 200000,
+  "paidAt": "2026-05-29T11:24:13Z",
+  "issuedAt": "2026-05-29T11:20:00Z"
+}
+```
+
+`status` values: `"pending"`, `"paid"`, `"cancelled"`, `"expired"`.
+
+#### `GET /credits/transactions?limit=&before=`
+
+Append-only ledger of credits and debits.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://dentexgo.mn/api/v1/clinics/dentaris/credits/transactions?limit=25"
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "tx_...",
+      "kind": "ai_reply_debit",
+      "amountMnt": -120,
+      "balanceAfterMnt": 141880,
+      "createdAt": "2026-05-29T11:23:01Z",
+      "meta": { "tokens_in": 412, "tokens_out": 188, "messageId": "..." }
+    },
+    {
+      "id": "tx_...",
+      "kind": "period_grant",
+      "amountMnt": 150000,
+      "balanceAfterMnt": 150000,
+      "createdAt": "2026-05-29T00:00:00Z",
+      "meta": { "period": "2026-06", "tier": "growth" }
+    },
+    {
+      "id": "tx_...",
+      "kind": "topup_qpay",
+      "amountMnt": 200000,
+      "balanceAfterMnt": 142000,
+      "createdAt": "2026-05-29T11:24:13Z",
+      "meta": { "invoiceId": "..." }
+    }
+  ]
+}
+```
+
+Pagination: pass `?before=<createdAt>` for the next page. Default `limit=25`, max `100`.
+
+`kind` values:
+
+| `kind`           | Meaning                                                   |
+| ---------------- | --------------------------------------------------------- |
+| `period_grant`   | Monthly tier allowance auto-credited at period start.     |
+| `topup_qpay`     | Paid top-up via QPay (this API).                          |
+| `manual_grant`   | Operator added credit (trade settlement, goodwill, etc.). |
+| `manual_adjust`  | Operator corrected a balance (signed).                    |
+| `ai_reply_debit` | Bot reply consumed credit. One row per reply.             |
+| `refund`         | Operator refunded a top-up.                               |
+
+#### Pricing reference (informational)
+
+| Item                           | ~MNT      |
+| ------------------------------ | --------- |
+| 1,000 tokens of patient input  | ~1        |
+| 1,000 tokens of bot output     | ~3        |
+| Typical AI reply (~600 tokens) | 80–250    |
+| Typical busy clinic / month    | 150K–500K |
+
+Server-side rates can shift if our model pricing or MNT/USD FX moves materially. We will give 30 days' notice via the operator console before rate changes.
+
+#### Credit errors
+
+| HTTP | `code`             | When                                                                        |
+| ---- | ------------------ | --------------------------------------------------------------------------- |
+| 400  | `INVALID_AMOUNT`   | `amountMnt` outside `[10000, 10000000]`.                                    |
+| 409  | `NO_AI_MODULE`     | Clinic has no active `ai_chatbot` subscription module.                      |
+| 502  | `QPAY_UNAVAILABLE` | QPay upstream failure when creating an invoice — retry after a short delay. |
 
 ---
 
@@ -288,7 +458,7 @@ The bot's voice and operational behavior are per-clinic. All fields are optional
 > The bot has TWO sources of instructions that can look similar but differ in authority:
 >
 > 1. **FAQ knowledge base** ([POST/PATCH /faqs](#post-faqs)) — for **facts**: prices, hours, policies, age limits, insurance coverage. **Highest** authority. The bot quotes FAQ verbatim when relevant.
-> 2. **Behavior rules** (`persona.custom_rules`) — for **behaviors**: HOW the bot replies. Examples: *"Always offer a free consultation."* / *"If a patient mentions kids under 7, suggest Dr. Bat-Erdene."*
+> 2. **Behavior rules** (`persona.custom_rules`) — for **behaviors**: HOW the bot replies. Examples: _"Always offer a free consultation."_ / _"If a patient mentions kids under 7, suggest Dr. Bat-Erdene."_
 >
 > **If a behavior rule restates or contradicts a fact also in the FAQ, the FAQ wins** — the rule becomes dead weight, or worse, makes replies inconsistent. Put **prices in FAQ rows**, not in behavior rules.
 
@@ -314,8 +484,14 @@ curl -H "Authorization: Bearer $TOKEN" \
       "en": "I'm your clinic's AI assistant."
     },
     "off_hours": {
-      "greeting": { "mn": "Сайн байна уу. Бид одоо хаалттай байна.", "en": "Hi. We are closed right now." },
-      "closer":   { "mn": "Маргааш 09:00 цагт холбогдох болно.", "en": "We will respond at 09:00." },
+      "greeting": {
+        "mn": "Сайн байна уу. Бид одоо хаалттай байна.",
+        "en": "Hi. We are closed right now."
+      },
+      "closer": {
+        "mn": "Маргааш 09:00 цагт холбогдох болно.",
+        "en": "We will respond at 09:00."
+      },
       "emergency_phone": "99001122"
     },
     "fallback_message": {
@@ -354,17 +530,17 @@ curl -X PATCH \
 
 Body schema (all fields optional):
 
-| Field | Type | Notes |
-|---|---|---|
-| `tone` | `"formal"` &#124; `"friendly"` &#124; `"casual"` | Sets the overall tone instruction in the system prompt |
-| `greeting` | `{ mn?, en? }` | Opening line on the first reply per conversation. Combined with the AI disclosure when both are set. |
-| `ai_disclosure` | `{ mn?, en? }` | Overrides the default disclosure text. **The disclosure is prepended automatically on the first message of every conversation — you do not write it into individual replies.** Required by Meta App Review; the system enforces this even if `ai_disclosure` is empty (default text is used). |
-| `off_hours` | `{ greeting?, closer?, emergency_phone? }` | Copy used when the patient DMs **outside** the clinic's open hours. Schedule comes from `branches.hours_json` automatically — you only set the closed-hours copy here. `greeting` overrides `persona.greeting` during off-hours. `emergency_phone` defaults to the clinic profile phone if unset. |
-| `fallback_message` | `{ mn?, en? }` | Used **verbatim** when the bot can't answer confidently. Replaces the LLM's own hedge. |
-| `featured_services` | `string[]` (max 8) | Array of `services_cache.source_id` values. Services in this list get pinned to the **top** of `list_services` results, in the order given. Stale ids (deleted services) silently no-op. |
-| `phone_in_replies` | `"always"` &#124; `"never"` &#124; `"when_uncertain"` | When the bot mentions the clinic phone. Default: `"when_uncertain"` (phone in escalation + low-confidence replies). `"always"` ends every reply with phone. `"never"` never volunteers phone (still given on escalation). |
-| `show_duration_in_cards` | `boolean` | When `true`, Messenger service-carousel cards include duration alongside price in the subtitle (e.g. `2,400,000₮ · 60 минут`). Default: `false` — most patient-discovery contexts (dental, beauty, spa) care about price, not appointment-slot length. Turn on for verticals where duration IS the headline (fitness classes, courses, therapy sessions). |
-| `custom_rules` | `string[]` | **Behavior rules** — see the callout at the top. HOW the bot replies, not WHAT it knows. |
+| Field                    | Type                                                  | Notes                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tone`                   | `"formal"` &#124; `"friendly"` &#124; `"casual"`      | Sets the overall tone instruction in the system prompt                                                                                                                                                                                                                                                                                                    |
+| `greeting`               | `{ mn?, en? }`                                        | Opening line on the first reply per conversation. Combined with the AI disclosure when both are set.                                                                                                                                                                                                                                                      |
+| `ai_disclosure`          | `{ mn?, en? }`                                        | Overrides the default disclosure text. **The disclosure is prepended automatically on the first message of every conversation — you do not write it into individual replies.** Required by Meta App Review; the system enforces this even if `ai_disclosure` is empty (default text is used).                                                             |
+| `off_hours`              | `{ greeting?, closer?, emergency_phone? }`            | Copy used when the patient DMs **outside** the clinic's open hours. Schedule comes from `branches.hours_json` automatically — you only set the closed-hours copy here. `greeting` overrides `persona.greeting` during off-hours. `emergency_phone` defaults to the clinic profile phone if unset.                                                         |
+| `fallback_message`       | `{ mn?, en? }`                                        | Used **verbatim** when the bot can't answer confidently. Replaces the LLM's own hedge.                                                                                                                                                                                                                                                                    |
+| `featured_services`      | `string[]` (max 8)                                    | Array of `services_cache.source_id` values. Services in this list get pinned to the **top** of `list_services` results, in the order given. Stale ids (deleted services) silently no-op.                                                                                                                                                                  |
+| `phone_in_replies`       | `"always"` &#124; `"never"` &#124; `"when_uncertain"` | When the bot mentions the clinic phone. Default: `"when_uncertain"` (phone in escalation + low-confidence replies). `"always"` ends every reply with phone. `"never"` never volunteers phone (still given on escalation).                                                                                                                                 |
+| `show_duration_in_cards` | `boolean`                                             | When `true`, Messenger service-carousel cards include duration alongside price in the subtitle (e.g. `2,400,000₮ · 60 минут`). Default: `false` — most patient-discovery contexts (dental, beauty, spa) care about price, not appointment-slot length. Turn on for verticals where duration IS the headline (fitness classes, courses, therapy sessions). |
+| `custom_rules`           | `string[]`                                            | **Behavior rules** — see the callout at the top. HOW the bot replies, not WHAT it knows.                                                                                                                                                                                                                                                                  |
 
 Response: `200 OK` with the resulting full persona (same shape as `GET /bot.persona`).
 
@@ -419,6 +595,7 @@ The bot processes a comment when **all** of these are true:
 Two messages, in parallel:
 
 1. **Public acknowledgment** under the original comment thread:
+
    - MN: `"Бид танд хувийн зурвас илгээлээ 👋"`
    - EN: `"We've sent you a private message 👋"`
 
@@ -460,6 +637,125 @@ Each comment-originated DM creates one row in our `conversations` table with `or
 
 ---
 
+### Conversation bot controls
+
+Control-plane only — pause/resume the bot and hand a conversation back to it from your own admin. (Reading message content stays out of scope; use `GET /conversations/export` for transcripts.)
+
+`{id}` accepts **either** our conversation UUID **or** the Messenger **PSID**. A PSID resolves to that patient's most-recently-active conversation for the clinic.
+
+State the bot uses to decide whether it replies:
+
+- `needs_human` — `true` silences the bot until handed back. Set when the patient taps "talk to human" or AI triage flags urgency. Auto-returns to the bot after **30 minutes** unhandled (the bot resumes on the patient's next message).
+- `bot_paused_until` — when in the future, the bot stays silent until that time.
+
+#### `GET /conversations`
+
+Lists conversations with their control state — the **needs-human queue**. Because `needs_human` lives in our system, an escalation is invisible in the Meta/Messenger inbox; poll this to find the conversations the bot has handed off.
+
+Query params:
+
+| Param         | Type              | Default           | Effect                                                                                                                                             |
+| ------------- | ----------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `needs_human` | `true` \| `false` | _(omitted → all)_ | `true` returns only escalated conversations, **oldest escalation first** (longest-waiting patient at the top). `false` returns only non-escalated. |
+| `limit`       | integer 1–100     | `50`              | Max rows returned.                                                                                                                                 |
+
+```bash
+curl -H "Authorization: Bearer <shared_secret>" \
+  "https://dentexgo.mn/api/v1/clinics/dentaris/conversations?needs_human=true&limit=100"
+```
+
+```json
+{
+  "conversations": [
+    {
+      "id": "8f3c…",
+      "psid": "36570716519209162",
+      "channel": "messenger",
+      "patient_name": "Bat-Erdene",
+      "needs_human": true,
+      "needs_human_at": "2026-06-04T03:10:00Z",
+      "bot_paused_until": null,
+      "bot_paused_active": false,
+      "last_message_at": "2026-06-04T03:12:00Z",
+      "messenger_thread_id": "t_123456789",
+      "messenger_deep_link": "https://business.facebook.com/latest/inbox/all?asset_id=PAGE_ID&mailbox_id=PAGE_ID&selected_item_id=t_123456789"
+    }
+  ],
+  "count": 1
+}
+```
+
+Response fields (`conversations[*]`):
+
+| Field                 | Type                           | Description                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | string                         | Opaque internal conversation ID.                                                                                                                                                                                                                                                                                                                                                         |
+| `psid`                | string                         | Meta Page-Scoped ID for the recipient.                                                                                                                                                                                                                                                                                                                                                   |
+| `channel`             | `"messenger"` \| `"instagram"` | Platform the conversation originated on.                                                                                                                                                                                                                                                                                                                                                 |
+| `patient_name`        | string                         | Recipient's name from Meta.                                                                                                                                                                                                                                                                                                                                                              |
+| `needs_human`         | boolean                        | Whether the bot has escalated the thread to staff.                                                                                                                                                                                                                                                                                                                                       |
+| `needs_human_at`      | string (ISO 8601) \| null      | Timestamp when escalation began, or `null` if not escalated.                                                                                                                                                                                                                                                                                                                             |
+| `bot_paused_until`    | string (ISO 8601) \| null      | When the bot will resume, or `null` if not paused.                                                                                                                                                                                                                                                                                                                                       |
+| `bot_paused_active`   | boolean                        | Whether the bot is currently paused (i.e., paused_until is in the future).                                                                                                                                                                                                                                                                                                               |
+| `last_message_at`     | string (ISO 8601)              | Timestamp of the most recent message in the thread.                                                                                                                                                                                                                                                                                                                                      |
+| `messenger_thread_id` | string \| null                 | Meta Graph thread id (`t_…`) for the Messenger conversation. `null` for Instagram, or until the bot first escalates the thread. Stable and API-supported.                                                                                                                                                                                                                                |
+| `messenger_deep_link` | string \| null                 | One-click URL into the thread in Meta Business Suite (web): `https://business.facebook.com/latest/inbox/all?asset_id={PAGE_ID}&mailbox_id={PAGE_ID}&selected_item_id={THREAD_ID}`. `null` when `messenger_thread_id` is `null`. **Unofficial URL** — Meta may change its shape without notice; prefer building your own link from `messenger_thread_id` if you need long-term stability. |
+
+Fetch a thread's transcript with `GET /conversations/export`, take over with `PATCH /conversations/{id}` (`pause_bot_hours`), and hand back with `PATCH … { "needs_human": false }`. There is no cursor: when `count` equals your `limit`, clear part of the queue (hand conversations back or take them over) and poll again. `400 INVALID_QUERY` if `needs_human` isn't `true`/`false` or `limit` is out of range.
+
+#### `GET /conversations/{id}`
+
+Returns the current control state.
+
+```json
+{
+  "conversation": {
+    "id": "8f3c…",
+    "psid": "36570716519209162",
+    "channel": "messenger",
+    "needs_human": true,
+    "needs_human_at": "2026-06-04T03:10:00Z",
+    "bot_paused_until": null,
+    "bot_paused_active": false,
+    "last_message_at": "2026-06-04T03:12:00Z",
+    "messenger_thread_id": "t_123456789",
+    "messenger_deep_link": "https://business.facebook.com/latest/inbox/all?asset_id=PAGE_ID&mailbox_id=PAGE_ID&selected_item_id=t_123456789"
+  }
+}
+```
+
+Response fields are the same as `GET /conversations` (see field table above). To let staff answer a handed-off conversation directly in Messenger (instead of your own admin UI), render `messenger_deep_link` as the target of a button on each `needs_human` row. There is no mobile-app deep link — the URL opens Meta Business Suite on the web.
+
+#### `PATCH /conversations/{id}`
+
+Body — send at least one field; omitted fields are unchanged:
+
+| Field             | Type           | Effect                                                                             |
+| ----------------- | -------------- | ---------------------------------------------------------------------------------- |
+| `needs_human`     | boolean        | `false` = hand back to the bot; `true` = escalate (silence the bot, notify staff). |
+| `pause_bot_hours` | number \| null | number = pause the bot that many hours; `null` = resume now.                       |
+
+**Fully hand a conversation back to the bot** (clears both guards):
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer <shared_secret>" \
+  -H "Content-Type: application/json" \
+  -d '{ "needs_human": false, "pause_bot_hours": null }' \
+  https://dentexgo.mn/api/v1/clinics/dentaris/conversations/36570716519209162
+```
+
+**Take over** (you'll reply yourself; keep the bot quiet for 12h):
+
+```bash
+curl -X PATCH ... -d '{ "pause_bot_hours": 12 }' \
+  https://dentexgo.mn/api/v1/clinics/dentaris/conversations/<psid-or-id>
+```
+
+Returns the updated `conversation` state (same shape as `GET`). `404 NOT_FOUND` if the conversation doesn't belong to your clinic. Rate limit: 60 writes/min/clinic.
+
+---
+
 ## CORS
 
 `Access-Control-Allow-Origin: *` on every response. Bearer auth is safe with wildcard CORS because the token is sent in a header, not a cookie — no CSRF risk.
@@ -486,26 +782,31 @@ No client-side rate limits in v1. Server-side Vercel function limits provide a s
 
 Coming in later versions (let the platform team know your priorities):
 
-- Conversations / inbox read API
+- Conversation message-content read API (list + control state ship in v1 via `GET /conversations`; message content stays out — use `GET /conversations/export` for transcripts)
 - Manual reply (send a Page message as the clinic)
-- Bot pause via API (per-conversation pause already lives in the dashboard)
 - Toggling `commentToDmEnabled` via API (operator-gated; coordinate via the platform team)
 - Customizable public-acknowledgment copy for the comment→DM flow (currently fixed bilingual string)
 - Instagram comment→DM (separate Meta App Review bundle)
 - Webhook subscriptions for inbound classified messages (push instead of pull)
 - OpenAPI / Swagger spec generation
+- Promotional / expiring credits (current credits never expire)
+- Refund self-service for credit top-ups (operator-gated)
+- Subscription module management via API (operator-gated; modules live on `clinics.subscriptions` and `subscription_modules`)
 
 ## Errors reference
 
-| HTTP | `code` | When |
-|---|---|---|
-| 400 | `INVALID_BODY` | Zod validation failure on POST/PATCH body. `details` lists field errors. |
-| 401 | `UNAUTHENTICATED` | Missing/malformed `Authorization` header |
-| 401 | `INVALID_TOKEN` | Wrong Bearer token |
-| 404 | `CLINIC_NOT_FOUND` | Slug unknown or clinic inactive |
-| 404 | `NOT_FOUND` | FAQ row doesn't exist on PATCH/DELETE |
-| 409 | `CLINIC_NOT_CONFIGURED` | Clinic has no shared secret yet |
-| 500 | `INTERNAL_ERROR` | Unhandled. Try again; if it persists, alert the platform team. |
+| HTTP | `code`                  | When                                                                     |
+| ---- | ----------------------- | ------------------------------------------------------------------------ |
+| 400  | `INVALID_BODY`          | Zod validation failure on POST/PATCH body. `details` lists field errors. |
+| 400  | `INVALID_AMOUNT`        | `amountMnt` for a top-up is outside `[10000, 10000000]`.                 |
+| 401  | `UNAUTHENTICATED`       | Missing/malformed `Authorization` header                                 |
+| 401  | `INVALID_TOKEN`         | Wrong Bearer token                                                       |
+| 404  | `CLINIC_NOT_FOUND`      | Slug unknown or clinic inactive                                          |
+| 404  | `NOT_FOUND`             | FAQ row or top-up invoice doesn't exist                                  |
+| 409  | `CLINIC_NOT_CONFIGURED` | Clinic has no shared secret or subscription envelope yet                 |
+| 409  | `NO_AI_MODULE`          | Clinic has no active `ai_chatbot` subscription module                    |
+| 500  | `INTERNAL_ERROR`        | Unhandled. Try again; if it persists, alert the platform team.           |
+| 502  | `QPAY_UNAVAILABLE`      | QPay upstream failure when creating a top-up invoice                     |
 
 ## Support
 
