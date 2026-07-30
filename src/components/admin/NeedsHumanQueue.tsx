@@ -9,6 +9,7 @@ import {
   type ConversationActionResult,
 } from "@/lib/actions/dentexgo-conversations";
 import type { DentexgoConversation } from "@/lib/dentexgo/conversations";
+import { formatTime } from "@/lib/utils/datetime";
 
 const POLL_MS = 30_000;
 
@@ -25,11 +26,18 @@ function waitingLabel(since: string | null, now: number): string {
   return `${hours} цаг ${mins % 60} минут хүлээж байна`;
 }
 
+/**
+ * Clinic-local (Ulaanbaatar) wall clock, via the shared formatter.
+ *
+ * `lastSync` starts as the server's timestamp and is rendered during SSR, then
+ * again on the client — so this string has to be identical in both. A bare
+ * `toLocaleTimeString` is not: the server resolved `mn-MN` to a 24-hour clock
+ * and the browser to a 12-hour one ("17:38" vs "05:38 PM"), and the server runs
+ * in UTC while staff are at +08. `formatTime` pins both `timeZone` and
+ * `hour12: false`, which is why it exists.
+ */
 function timeLabel(ts: number): string {
-  return new Date(ts).toLocaleTimeString("mn-MN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatTime(new Date(ts));
 }
 
 async function copyToClipboard(text: string, label: string) {
