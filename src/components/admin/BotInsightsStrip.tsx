@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   INTENT_LABELS_MN,
+  type FaqGapCluster,
   type InsightsSummary,
 } from "@/lib/dentexgo/insights";
 import type { BotSectionError } from "@/lib/queries/dentexgo-dashboard";
@@ -18,9 +19,17 @@ const LOCALE_LABELS_MN: Record<string, string> = {
 export function BotInsightsStrip({
   insights,
   error,
+  clusters,
 }: {
   insights: InsightsSummary | null;
   error: BotSectionError | null;
+  /**
+   * FAQ gaps grouped by meaning. Shown instead of raw individual questions: one
+   * patient's phrasing ("aprat une") makes a poor FAQ entry, while a topic with
+   * a count tells staff what to write first. Empty on a clusters-only failure —
+   * the rest of the strip still renders.
+   */
+  clusters: FaqGapCluster[];
 }) {
   if (error) {
     return (
@@ -36,7 +45,7 @@ export function BotInsightsStrip({
 
   const ratePct = Math.round((insights.needsHumanRate.rate ?? 0) * 100);
   const topIntents = insights.intents.slice(0, 3);
-  const gaps = insights.faqGaps.slice(0, 3);
+  const topClusters = clusters.slice(0, 3);
 
   return (
     <section className="rounded-[16px] bg-white p-5 shadow-[0_8px_20px_-14px_rgba(15,23,42,0.15)] sm:p-6">
@@ -110,29 +119,34 @@ export function BotInsightsStrip({
         </div>
       </div>
 
-      {/* FAQ gaps — questions the bot couldn't answer confidently */}
-      {gaps.length > 0 && (
+      {/* Recurring questions the bot couldn't answer, grouped by meaning.
+          Read-only here — drafting a bilingual question is a POST, so it lives
+          on /admin/bot/faq-gaps where each row gets its own button. */}
+      {topClusters.length > 0 && (
         <div className="mt-5 border-t border-line pt-4">
-          <p className="text-[11px] font-medium text-[#6b7280]">
-            FAQ-д нэмэх санал
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] font-medium text-[#6b7280]">
+              Хамгийн их давтагдсан хариулагдаагүй асуулт
+            </p>
+            <Link
+              href="/admin/bot/faq-gaps"
+              className="text-[10px] font-bold text-[#0c7b6e] hover:underline"
+            >
+              Бүгдийг харах →
+            </Link>
+          </div>
           <ul className="mt-2 space-y-2">
-            {gaps.map((g) => (
+            {topClusters.map((c) => (
               <li
-                key={g.conversationId + g.classifiedAt}
+                key={c.topic}
                 className="flex flex-wrap items-center justify-between gap-2"
               >
                 <span className="min-w-0 flex-1 truncate text-[11px] text-[#374151]">
-                  {g.text}
+                  {c.topic}
                 </span>
-                <Link
-                  href={`/admin/bot/faqs/new?q=${encodeURIComponent(g.text)}${
-                    g.locale === "en" ? "&locale=en" : ""
-                  }`}
-                  className="shrink-0 text-[10px] font-bold text-[#0c7b6e] hover:underline"
-                >
-                  FAQ болгох →
-                </Link>
+                <span className="shrink-0 rounded-full bg-[#f3f4f6] px-2 py-0.5 text-[10px] font-bold text-[#6b7280]">
+                  {c.count} хүн
+                </span>
               </li>
             ))}
           </ul>

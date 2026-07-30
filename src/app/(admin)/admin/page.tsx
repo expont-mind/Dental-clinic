@@ -221,6 +221,7 @@ export default async function AdminDashboardPage() {
           <BotInsightsStrip
             insights={bot.insights}
             error={bot.insightsError}
+            clusters={bot.clusters}
           />
         )}
 

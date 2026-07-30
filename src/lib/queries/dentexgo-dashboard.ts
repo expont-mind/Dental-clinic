@@ -6,7 +6,9 @@ import {
 } from "@/lib/dentexgo/conversations";
 import { describeDentexgoError } from "@/lib/dentexgo/errors";
 import {
+  getFaqGapClusters,
   getInsightsSummary,
+  type FaqGapCluster,
   type InsightsSummary,
 } from "@/lib/dentexgo/insights";
 
@@ -22,6 +24,13 @@ export type BotDashboardData = {
   queueError: BotSectionError | null;
   insights: InsightsSummary | null;
   insightsError: BotSectionError | null;
+  /**
+   * FAQ gaps grouped by meaning. Fetched separately because
+   * /insights/summary predates the clusters endpoint, and settled on its own so
+   * a clusters failure leaves the rest of the strip intact.
+   */
+  clusters: FaqGapCluster[];
+  clustersError: BotSectionError | null;
 };
 
 /**
@@ -38,12 +47,17 @@ export async function loadBotDashboardData(): Promise<BotDashboardData> {
       queueError: null,
       insights: null,
       insightsError: null,
+      clusters: [],
+      clustersError: null,
     };
   }
 
-  const [queueRes, insightsRes] = await Promise.allSettled([
+  // The strip shows only the top few clusters, so a small limit keeps the
+  // dashboard's payload down; the dedicated FAQ-gaps page asks for the full set.
+  const [queueRes, insightsRes, clustersRes] = await Promise.allSettled([
     listConversations({ needsHuman: true, limit: 100 }),
     getInsightsSummary(30),
+    getFaqGapClusters({ days: 30, limit: 5 }),
   ]);
 
   if (queueRes.status === "rejected") {
@@ -51,6 +65,9 @@ export async function loadBotDashboardData(): Promise<BotDashboardData> {
   }
   if (insightsRes.status === "rejected") {
     console.error("[loadBotDashboardData] insights failed:", insightsRes.reason);
+  }
+  if (clustersRes.status === "rejected") {
+    console.error("[loadBotDashboardData] clusters failed:", clustersRes.reason);
   }
 
   return {
@@ -64,6 +81,11 @@ export async function loadBotDashboardData(): Promise<BotDashboardData> {
     insightsError:
       insightsRes.status === "rejected"
         ? describeDentexgoError(insightsRes.reason)
+        : null,
+    clusters: clustersRes.status === "fulfilled" ? clustersRes.value : [],
+    clustersError:
+      clustersRes.status === "rejected"
+        ? describeDentexgoError(clustersRes.reason)
         : null,
   };
 }

@@ -51,6 +51,31 @@ export interface InsightsSummary {
 }
 
 /**
+ * The same escalated questions as `faqGaps`, grouped by meaning — so nine
+ * people asking about braces pricing in nine wordings collapse into one row
+ * with `count: 9`. Embedding-based, so Cyrillic, romanized Mongolian
+ * (`mn-Latn`) and English phrasings of one question land in the same cluster.
+ */
+export interface FaqGapCluster {
+  /** Representative question — the member closest to the cluster centroid. */
+  topic: string;
+  /** How many escalated questions fell into this topic. */
+  count: number;
+  /** Up to 5 distinct member phrasings. Feed these to `draftFaqQuestion`. */
+  examples: string[];
+  /** The conversations behind the cluster, for drill-in. */
+  conversationIds: string[];
+  /** Dominant locale in the cluster. */
+  locale: string;
+}
+
+/** Normalized bilingual FAQ question. No answer — see `draftFaqQuestion`. */
+export interface FaqDraft {
+  qMn: string;
+  qEn: string;
+}
+
+/**
  * Mongolian labels for the contract's closed set of intent values. Unknown
  * intents fall through to the raw value so a new label added upstream still
  * renders rather than disappearing.
@@ -93,4 +118,48 @@ export async function getInsightsSummary(
     faqGaps: data.faqGaps ?? [],
     usage: data.usage ?? [],
   };
+}
+
+/**
+ * FAQ gaps grouped by meaning, most frequent first (the API sorts by `count`
+ * desc; the order is preserved). Deliberately a separate call: `/insights/summary`
+ * predates this endpoint and does not carry clusters.
+ *
+ * `days` defaults to 30 upstream (max 365), `limit` to 20 (max 100).
+ */
+export async function getFaqGapClusters(
+  opts: { days?: number; limit?: number } = {},
+): Promise<FaqGapCluster[]> {
+  const data = await apiFetch<{ clusters: FaqGapCluster[] }>(
+    "/insights/faq-gaps/clusters",
+    { searchParams: { days: opts.days, limit: opts.limit } },
+  );
+  // Normalize: a malformed 200 must not crash a server render.
+  return (data.clusters ?? []).map((c) => ({
+    topic: c.topic,
+    count: c.count ?? 0,
+    examples: c.examples ?? [],
+    conversationIds: c.conversationIds ?? [],
+    locale: c.locale,
+  }));
+}
+
+/**
+ * Turn a cluster's phrasings into one clean bilingual question.
+ *
+ * Returns the QUESTION only. The bot escalated precisely because it had no
+ * answer, so staff supply `aMn`/`aEn` before POSTing to `/faqs`. Called on
+ * demand from the FAQ-gaps page — never for every cluster on page load, since
+ * each call is a POST upstream.
+ *
+ * The contract accepts 1–20 questions, each ≤1000 chars.
+ */
+export async function draftFaqQuestion(
+  questions: string[],
+): Promise<FaqDraft> {
+  const data = await apiFetch<{ draft: FaqDraft }>(
+    "/insights/faq-gaps/draft",
+    { method: "POST", body: JSON.stringify({ questions }) },
+  );
+  return data.draft;
 }

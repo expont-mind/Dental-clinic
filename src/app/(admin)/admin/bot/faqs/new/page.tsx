@@ -5,12 +5,20 @@ import { FaqForm } from "@/components/admin/FaqForm";
 export default async function AdminBotFaqNewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; locale?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    locale?: string;
+    qMn?: string;
+    qEn?: string;
+  }>;
 }) {
   const sp = await searchParams;
+  // `qMn`/`qEn` come from the FAQ-gaps flow, which drafts both halves at once
+  // via POST /insights/faq-gaps/draft. `q` + `locale` is the older single-sided
+  // form — still honoured so existing links and bookmarks keep working.
   const prefillIsEnglish = sp.locale === "en";
-  const prefillQMn = !prefillIsEnglish ? sp.q : undefined;
-  const prefillQEn = prefillIsEnglish ? sp.q : undefined;
+  const prefillQMn = sp.qMn ?? (!prefillIsEnglish ? sp.q : undefined);
+  const prefillQEn = sp.qEn ?? (prefillIsEnglish ? sp.q : undefined);
 
   return (
     <div>

@@ -10,7 +10,7 @@ This is the API **Dentexgo exposes to the clinic**, not the integration contract
 
 Most clinics already run a custom dental-clinic admin website. Rather than ask staff to context-switch into Dentexgo's `/dashboard/[slug]` UI, this REST API lets the clinic's own admin manage the FAQ knowledge base and pull bot-conversation insights directly.
 
-14 endpoints. All return JSON. All require a Bearer token. CORS-enabled (wildcard origin).
+16 endpoints. All return JSON. All require a Bearer token. CORS-enabled (wildcard origin).
 
 ## Base URL
 
@@ -237,6 +237,47 @@ Heuristic candidates to add to your FAQ. Surfaces patient questions about servic
 ```
 
 Workflow: review → click "Add to FAQ" in your admin → POST the new question to `/faqs`.
+
+#### `GET /insights/faq-gaps/clusters?days=30&limit=20`
+
+The same escalated FAQ/service questions as `/faq-gaps`, but **grouped by meaning** so you see which topics recur (e.g. 9 people asking about braces pricing in different words collapse into one row). Embedding-based; no LLM. Sorted by `count` desc.
+
+```json
+{
+  "clusters": [
+    {
+      "topic": "Шүдний аппаратын үнэ хэд вэ?",
+      "count": 9,
+      "examples": ["аппратны үнэ", "aprat une", "braces price?"],
+      "conversationIds": ["uuid", "uuid"],
+      "locale": "mn"
+    }
+  ]
+}
+```
+
+- `topic` — the cluster's representative question (closest to the group centroid).
+- `count` — how many escalated questions fell into this topic.
+- `examples` — up to 5 distinct member phrasings.
+- `conversationIds` — the conversations behind the cluster (drill-in).
+- `locale` — the dominant locale in the cluster.
+
+#### `POST /insights/faq-gaps/draft`
+
+Turn one cluster into a clean FAQ question. Send the cluster's `examples` (or any phrasings). Returns a normalized bilingual **question only** — no answer, because the bot escalated precisely because it lacked the answer; you supply it, then POST to `/faqs`.
+
+Body: `{ "questions": string[] }` (1–20 items, each ≤1000 chars).
+
+```json
+{
+  "draft": {
+    "qMn": "Шүдний аппаратын үнэ хэд вэ?",
+    "qEn": "How much do dental braces cost?"
+  }
+}
+```
+
+`400 INVALID_BODY` if `questions` is empty or malformed. Workflow: `clusters` → pick a topic → `draft` → fill `aMn`/`aEn` → `POST /faqs`.
 
 #### `GET /insights/usage?days=30`
 

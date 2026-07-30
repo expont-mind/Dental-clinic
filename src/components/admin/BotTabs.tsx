@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-export type BotTabKey = "faqs" | "config";
+export type BotTabKey = "faqs" | "gaps" | "config";
 
 const TABS: Array<{ key: BotTabKey; href: string; label: string }> = [
   { key: "faqs", href: "/admin/bot/faqs", label: "Асуулт хариулт" },
+  { key: "gaps", href: "/admin/bot/faq-gaps", label: "FAQ санал" },
   { key: "config", href: "/admin/bot/config", label: "Тохиргоо" },
 ];
 
