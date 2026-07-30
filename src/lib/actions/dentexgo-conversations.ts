@@ -45,7 +45,13 @@ function describe(e: unknown): { error: string; code?: string } {
     if (e.code === "NO_AI_MODULE") {
       return { error: "AI модуль активгүй байна.", code: e.code };
     }
-    return { error: `${e.code}: ${e.message}`, code: e.code };
+    // Any other code: the API's own `message` is English prose, which must not
+    // reach the Mongolian admin UI. Surface a Mongolian sentence and keep the
+    // machine code visible so staff can quote it to the platform operator.
+    return {
+      error: `Dentexgo-ийн алдаа (${e.code}). Дахин оролдоно уу.`,
+      code: e.code,
+    };
   }
   return {
     error: "Dentexgo-той холбогдож чадсангүй.",
