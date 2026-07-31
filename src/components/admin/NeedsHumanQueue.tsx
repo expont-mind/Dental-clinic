@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions/dentexgo-conversations";
 import type { DentexgoConversation } from "@/lib/dentexgo/conversations";
 import { formatTime } from "@/lib/utils/datetime";
+import { ConversationChat } from "./ConversationChat";
 
 const POLL_MS = 30_000;
 
@@ -70,6 +71,8 @@ export function NeedsHumanQueue({
   const [lastSync, setLastSync] = useState<number | null>(serverNow);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** Conversation whose chat panel is open, by id. */
+  const [chatId, setChatId] = useState<string | null>(null);
   /**
    * Bumped by every successful action. A poll that began before a mutation
    * landed is already stale — applying it would resurrect a row the admin just
@@ -142,6 +145,10 @@ export function NeedsHumanQueue({
       toast.success("Бот руу буцаагдлаа.");
     });
   }
+
+  const chatConversation = chatId
+    ? (rows.find((r) => r.id === chatId) ?? null)
+    : null;
 
   return (
     <section className="rounded-[16px] bg-white p-5 shadow-[0_8px_20px_-14px_rgba(15,23,42,0.15)] sm:p-6">
@@ -243,6 +250,20 @@ export function NeedsHumanQueue({
                         Нэр хуулах
                       </button>
                     )}
+                    {/* Secondary since replies happen in the panel now. It
+                        opens the INBOX, not this thread — Meta exposes no
+                        thread link for a PSID — so staff search by name. */}
+                    {c.messenger_inbox_link && (
+                      <a
+                        href={c.messenger_inbox_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Meta Business Suite-ийн inbox нээгдэнэ. Ярианыг өвчтөний нэрээр хайж олно уу."
+                        className="-my-1 rounded py-1 text-[10px] text-[#6b7280] hover:text-[#0f172a] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
+                      >
+                        Inbox нээх ↗
+                      </a>
+                    )}
                     <button
                       type="button"
                       onClick={() => void copyToClipboard(c.psid, "PSID")}
@@ -254,20 +275,13 @@ export function NeedsHumanQueue({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Opens the Business Suite INBOX, not this thread — Meta
-                      exposes no thread link for a PSID. The label says so, and
-                      the name-copy button above is how staff find the row. */}
-                  {c.messenger_inbox_link && (
-                    <a
-                      href={c.messenger_inbox_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Meta Business Suite-ийн inbox нээгдэнэ. Ярианыг өвчтөний нэрээр хайж олно уу."
-                      className="inline-flex min-h-9 cursor-pointer items-center rounded-full bg-[#0f172a] px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
-                    >
-                      Inbox нээх
-                    </a>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setChatId(c.id)}
+                    className="inline-flex min-h-9 cursor-pointer items-center rounded-full bg-[#0f172a] px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
+                  >
+                    Харилцах
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleTakeOver(c.id)}
@@ -290,6 +304,29 @@ export function NeedsHumanQueue({
           );
         })}
       </ul>
+
+      {chatConversation && (
+        <ConversationChat
+          conversation={chatConversation}
+          onClose={() => setChatId(null)}
+          onSent={(botPausedUntil) => {
+            // Sending pauses the bot upstream; mirror that on the row so
+            // "Би хариулна" doesn't offer to do what already happened.
+            setRows((prev) =>
+              prev.map((r) =>
+                r.id === chatConversation.id
+                  ? {
+                      ...r,
+                      bot_paused_until: botPausedUntil,
+                      bot_paused_active: Boolean(botPausedUntil),
+                    }
+                  : r,
+              ),
+            );
+            mutationRef.current += 1;
+          }}
+        />
+      )}
     </section>
   );
 }

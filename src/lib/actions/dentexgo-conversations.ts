@@ -4,9 +4,13 @@ import { assertAdmin } from "@/lib/auth";
 import { isConfigured } from "@/lib/dentexgo/client";
 import {
   listConversations,
+  listMessages,
   patchConversation,
+  sendMessage,
+  type ConversationMessagesPage,
   type ConversationPatch,
   type DentexgoConversation,
+  type SendMessageResult,
 } from "@/lib/dentexgo/conversations";
 import { describeDentexgoError } from "@/lib/dentexgo/errors";
 
@@ -18,6 +22,9 @@ import { describeDentexgoError } from "@/lib/dentexgo/errors";
  * value reaches the UI via takeOverAction's `pausedHours`.
  */
 const TAKE_OVER_HOURS = 12;
+
+/** Upstream caps message text at 2000 characters. */
+const MAX_MESSAGE_LENGTH = 2000;
 
 export type QueueResult =
   | { ok: true; conversations: DentexgoConversation[] }
@@ -104,4 +111,77 @@ export async function handBackAction(
     { needs_human: false, pause_bot_hours: null },
     "[handBackAction]",
   );
+}
+
+export type MessagesResult =
+  | { ok: true; page: ConversationMessagesPage }
+  | { ok: false; error: string; code?: string };
+
+export type SendResult =
+  | { ok: true; result: SendMessageResult }
+  | { ok: false; error: string; code?: string };
+
+/** Message history for the chat panel. Polled while the panel is open. */
+export async function fetchMessagesAction(
+  id: string,
+): Promise<MessagesResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return { ok: false, error: authErr, code: "FORBIDDEN" };
+  if (!id) return { ok: false, error: "ID байхгүй байна." };
+  try {
+    return { ok: true, page: await listMessages(id, { limit: 50 }) };
+  } catch (e) {
+    console.error("[fetchMessagesAction]", e);
+    const { message, code } = describeDentexgoError(e);
+    return { ok: false, error: message, code };
+  }
+}
+
+/**
+ * Reply as the clinic. Sending also takes the thread over upstream — the bot is
+ * paused so it can't answer on top of staff.
+ *
+ * `OUTSIDE_MESSAGING_WINDOW` gets its own message because it is not a fault the
+ * user can retry away: Meta blocks free-form replies more than 24h after the
+ * patient's last message, and only the patient can reopen the window.
+ */
+export async function sendMessageAction(
+  id: string,
+  input: { text?: string; imageUrl?: string },
+): Promise<SendResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return { ok: false, error: authErr, code: "FORBIDDEN" };
+  if (!id) return { ok: false, error: "ID байхгүй байна." };
+
+  const text = input.text?.trim();
+  const imageUrl = input.imageUrl?.trim();
+  if (!text && !imageUrl) {
+    return { ok: false, error: "Зурвас хоосон байна." };
+  }
+  if (text && text.length > MAX_MESSAGE_LENGTH) {
+    return {
+      ok: false,
+      error: `Зурвас хэт урт байна (${MAX_MESSAGE_LENGTH} тэмдэгтээс бага).`,
+    };
+  }
+
+  try {
+    const result = await sendMessage(id, {
+      ...(text ? { text } : {}),
+      ...(imageUrl ? { imageUrl } : {}),
+    });
+    return { ok: true, result };
+  } catch (e) {
+    console.error("[sendMessageAction]", e);
+    const { message, code } = describeDentexgoError(e);
+    if (code === "OUTSIDE_MESSAGING_WINDOW") {
+      return {
+        ok: false,
+        code,
+        error:
+          "24 цагийн хугацаа хэтэрсэн тул Messenger зурвас илгээх боломжгүй. Өвчтөн дахин бичих хүртэл хүлээнэ үү.",
+      };
+    }
+    return { ok: false, error: message, code };
+  }
 }

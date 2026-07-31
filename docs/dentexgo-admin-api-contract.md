@@ -10,7 +10,7 @@ This is the API **Dentexgo exposes to the clinic**, not the integration contract
 
 Most clinics already run a custom dental-clinic admin website. Rather than ask staff to context-switch into Dentexgo's `/dashboard/[slug]` UI, this REST API lets the clinic's own admin manage the FAQ knowledge base and pull bot-conversation insights directly.
 
-16 endpoints. All return JSON. All require a Bearer token. CORS-enabled (wildcard origin).
+18 endpoints. All return JSON. All require a Bearer token. CORS-enabled (wildcard origin).
 
 ## Base URL
 
@@ -792,6 +792,61 @@ curl -X PATCH ... -d '{ "pause_bot_hours": 12 }' \
 
 Returns the updated `conversation` state (same shape as `GET`). `404 NOT_FOUND` if the conversation doesn't belong to your clinic. Rate limit: 60 writes/min/clinic.
 
+#### `GET /conversations/{id}/messages?limit=50&before=`
+
+Read the actual message content of a thread — enough to render a chat view.
+
+```json
+{
+  "messages": [
+    {
+      "id": "uuid",
+      "direction": "in",
+      "sender": "patient",
+      "content": "Шүдний аппаратны үнэ хэд вэ?",
+      "created_at": "2026-07-31T02:39:20Z"
+    }
+  ],
+  "messaging_window": { "open": true, "expires_at": "2026-08-01T02:39:20Z" }
+}
+```
+
+- `direction` — `"in"` (from patient) or `"out"` (from bot/clinic).
+- `sender` — `"patient"`, `"bot"`, or `"admin"` (a human staff reply sent via `POST … /messages`).
+- `messaging_window` — Meta's 24h send window, derived from the patient's last inbound message. `open` is whether you may currently send a free-form reply; `expires_at` is the boundary (`null` if the patient has never messaged). Use it to enable/disable your composer.
+
+Query: `limit` 1–100 (default 50); `before` = a message `created_at` (ISO) to page backward through older messages. Messages are returned oldest-first within the page.
+
+#### `POST /conversations/{id}/messages`
+
+Send a reply **as the clinic** (a human staff message, no AI disclosure). Sending automatically **takes over the thread**: the bot is paused so it doesn't reply on top of your agent.
+
+Body — provide at least one of `text` / `imageUrl`:
+
+| Field             | Type                      | Notes                                                                                                                              |
+| ----------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `text`            | string ≤2000              | Message text.                                                                                                                      |
+| `imageUrl`        | string (public URL) ≤2048 | An image to send. Must be publicly reachable — Meta fetches it server-side. Host it yourself (e.g. via the Cloudinary sign route). |
+| `pause_bot_hours` | number 0–8760             | How long to pause the bot after sending. Default **12**.                                                                           |
+
+```bash
+curl -X POST -H "Authorization: Bearer <shared_secret>" -H "Content-Type: application/json" \
+  -d '{ "text": "Сайн байна уу, аппаратны үнэ 2,400,000₮-өөс эхэлдэг." }' \
+  https://dentexgo.mn/api/v1/clinics/dentaris/conversations/<psid-or-id>/messages
+```
+
+```json
+{
+  "sent": [{ "id": "uuid", "kind": "text", "message_id": "m_..." }],
+  "bot_paused_until": "2026-07-31T14:39:20Z",
+  "messaging_window": { "open": true, "expires_at": "2026-08-01T02:39:20Z" }
+}
+```
+
+- `409 OUTSIDE_MESSAGING_WINDOW` if the patient's last message was over 24h ago — Meta forbids free-form sends then, so the patient must message first (the `details.expires_at` tells you when it closed). Check `messaging_window.open` from the GET before showing a composer.
+- `400 INVALID_BODY` if neither `text` nor `imageUrl` is given.
+- Rate limit: 30 sends/min/clinic.
+
 ---
 
 ## CORS
@@ -820,8 +875,6 @@ No client-side rate limits in v1. Server-side Vercel function limits provide a s
 
 Coming in later versions (let the platform team know your priorities):
 
-- Conversation message-content read API (list + control state ship in v1 via `GET /conversations`; message content stays out — use `GET /conversations/export` for transcripts)
-- Manual reply (send a Page message as the clinic)
 - Toggling `commentToDmEnabled` via API (operator-gated; coordinate via the platform team)
 - Customizable public-acknowledgment copy for the comment→DM flow (currently fixed bilingual string)
 - Instagram comment→DM (separate Meta App Review bundle)
@@ -833,18 +886,19 @@ Coming in later versions (let the platform team know your priorities):
 
 ## Errors reference
 
-| HTTP | `code`                  | When                                                                     |
-| ---- | ----------------------- | ------------------------------------------------------------------------ |
-| 400  | `INVALID_BODY`          | Zod validation failure on POST/PATCH body. `details` lists field errors. |
-| 400  | `INVALID_AMOUNT`        | `amountMnt` for a top-up is outside `[10000, 10000000]`.                 |
-| 401  | `UNAUTHENTICATED`       | Missing/malformed `Authorization` header                                 |
-| 401  | `INVALID_TOKEN`         | Wrong Bearer token                                                       |
-| 404  | `CLINIC_NOT_FOUND`      | Slug unknown or clinic inactive                                          |
-| 404  | `NOT_FOUND`             | FAQ row or top-up invoice doesn't exist                                  |
-| 409  | `CLINIC_NOT_CONFIGURED` | Clinic has no shared secret or subscription envelope yet                 |
-| 409  | `NO_AI_MODULE`          | Clinic has no active `ai_chatbot` subscription module                    |
-| 500  | `INTERNAL_ERROR`        | Unhandled. Try again; if it persists, alert the platform team.           |
-| 502  | `QPAY_UNAVAILABLE`      | QPay upstream failure when creating a top-up invoice                     |
+| HTTP | `code`                     | When                                                                                 |
+| ---- | -------------------------- | ------------------------------------------------------------------------------------ |
+| 400  | `INVALID_BODY`             | Zod validation failure on POST/PATCH body. `details` lists field errors.             |
+| 400  | `INVALID_AMOUNT`           | `amountMnt` for a top-up is outside `[10000, 10000000]`.                             |
+| 401  | `UNAUTHENTICATED`          | Missing/malformed `Authorization` header                                             |
+| 401  | `INVALID_TOKEN`            | Wrong Bearer token                                                                   |
+| 404  | `CLINIC_NOT_FOUND`         | Slug unknown or clinic inactive                                                      |
+| 404  | `NOT_FOUND`                | FAQ row or top-up invoice doesn't exist                                              |
+| 409  | `CLINIC_NOT_CONFIGURED`    | Clinic has no shared secret or subscription envelope yet                             |
+| 409  | `NO_AI_MODULE`             | Clinic has no active `ai_chatbot` subscription module                                |
+| 409  | `OUTSIDE_MESSAGING_WINDOW` | Sending a message but the patient's last inbound was >24h ago (Meta's window closed) |
+| 500  | `INTERNAL_ERROR`           | Unhandled. Try again; if it persists, alert the platform team.                       |
+| 502  | `QPAY_UNAVAILABLE`         | QPay upstream failure when creating a top-up invoice                                 |
 
 ## Support
 
