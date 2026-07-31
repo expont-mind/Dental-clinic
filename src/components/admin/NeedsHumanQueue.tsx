@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import {
   fetchNeedsHumanAction,
   handBackAction,
-  takeOverAction,
   type ConversationActionResult,
 } from "@/lib/actions/dentexgo-conversations";
 import type { DentexgoConversation } from "@/lib/dentexgo/conversations";
@@ -13,6 +12,31 @@ import { formatTime } from "@/lib/utils/datetime";
 import { ConversationChat } from "./ConversationChat";
 
 const POLL_MS = 30_000;
+
+/** Meta's send window runs 24h from the patient's last inbound message. */
+const MESSAGING_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Upstream allows 60 writes/min/clinic. A queue can hold 100 rows, so clearing
+ * is spread across passes instead of firing them all at once.
+ */
+const MAX_AUTO_CLEAR_PER_PASS = 8;
+
+/**
+ * True when the 24h Messenger window is *provably* shut.
+ *
+ * `messaging_window` only comes back from GET …/{id}/messages — asking per row
+ * would be one request per conversation on every poll — so this infers from
+ * `last_message_at`, which counts messages in BOTH directions and is therefore
+ * an upper bound on the last inbound one. Older than 24h proves the window is
+ * closed. The converse does NOT hold: a recent bot reply says nothing about
+ * when the patient last wrote, so this never concludes "open".
+ */
+function isWindowClosed(lastMessageAt: string, now: number): boolean {
+  const ts = new Date(lastMessageAt).getTime();
+  if (!Number.isFinite(ts)) return false;
+  return now - ts > MESSAGING_WINDOW_MS;
+}
 
 /**
  * How long this patient has been waiting. An escalation auto-returns to the bot
@@ -73,6 +97,11 @@ export function NeedsHumanQueue({
   const [busyId, setBusyId] = useState<string | null>(null);
   /** Conversation whose chat panel is open, by id. */
   const [chatId, setChatId] = useState<string | null>(null);
+  /** How many expired threads this session handed back, shown so the automatic
+   * upstream write is never silent. */
+  const [autoCleared, setAutoCleared] = useState(0);
+  /** Ids already attempted, so a re-render can't PATCH the same row twice. */
+  const autoClearedRef = useRef<Set<string>>(new Set());
   /**
    * Bumped by every successful action. A poll that began before a mutation
    * landed is already stale — applying it would resurrect a row the admin just
@@ -108,6 +137,46 @@ export function NeedsHumanQueue({
     return () => clearInterval(timer);
   }, [refresh]);
 
+  /**
+   * Clear rows whose Messenger window has provably shut.
+   *
+   * Nothing can be said to these patients — Meta blocks the send — so they only
+   * bury the ones staff can still help. Handing them back also lets the bot
+   * answer if the patient ever writes again, which an indefinitely-escalated
+   * thread would not.
+   *
+   * This writes upstream without staff asking, so it is deliberately visible:
+   * the count stays on screen. Each id is attempted once per session; a failed
+   * attempt is released so a later pass can retry.
+   */
+  useEffect(() => {
+    const stale = rows.filter(
+      (r) =>
+        isWindowClosed(r.last_message_at, Date.now()) &&
+        !autoClearedRef.current.has(r.id),
+    );
+    if (stale.length === 0) return;
+
+    const batch = stale.slice(0, MAX_AUTO_CLEAR_PER_PASS);
+    batch.forEach((r) => autoClearedRef.current.add(r.id));
+
+    // Every setState below runs in the promise continuation, after an await —
+    // never synchronously in this effect body.
+    void (async () => {
+      const cleared: string[] = [];
+      for (const r of batch) {
+        const res = await handBackAction(r.id);
+        if (res.ok) cleared.push(r.id);
+        // Release it so a later pass can retry rather than losing the row.
+        else autoClearedRef.current.delete(r.id);
+      }
+      if (cleared.length === 0) return;
+      mutationRef.current += 1;
+      setRows((prev) => prev.filter((p) => !cleared.includes(p.id)));
+      setAutoCleared((n) => n + cleared.length);
+    })();
+  }, [rows]);
+
   async function run(
     id: string,
     fn: (id: string) => Promise<ConversationActionResult>,
@@ -128,14 +197,6 @@ export function NeedsHumanQueue({
     } finally {
       setBusyId(null);
     }
-  }
-
-  function handleTakeOver(id: string) {
-    void run(id, takeOverAction).then((res) => {
-      if (!res.ok) return;
-      setRows((prev) => prev.map((r) => (r.id === id ? res.conversation : r)));
-      toast.success(`Бот ${res.pausedHours ?? 12} цаг чимээгүй болно.`);
-    });
   }
 
   function handleHandBack(id: string) {
@@ -194,6 +255,13 @@ export function NeedsHumanQueue({
           className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-[11px] text-danger"
         >
           {error}
+        </p>
+      )}
+
+      {autoCleared > 0 && (
+        <p className="mt-3 rounded-xl bg-[#f3f4f6] px-3 py-2 text-[11px] leading-5 text-[#6b7280]">
+          Meta-гийн 24 цагийн хугацаа хэтэрсэн {autoCleared} яриаг бот руу
+          буцаалаа — тэдгээрт зурвас илгээх боломжгүй байсан.
         </p>
       )}
 
@@ -281,14 +349,6 @@ export function NeedsHumanQueue({
                     className="inline-flex min-h-9 cursor-pointer items-center rounded-full bg-[#0f172a] px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
                   >
                     Харилцах
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTakeOver(c.id)}
-                    disabled={busy || c.bot_paused_active}
-                    className="inline-flex min-h-9 cursor-pointer items-center rounded-full bg-[#f3f4f6] px-3.5 py-2 text-[11px] font-bold text-[#0f172a] transition-colors hover:bg-[#e5e7eb] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
-                  >
-                    Би хариулна
                   </button>
                   <button
                     type="button"

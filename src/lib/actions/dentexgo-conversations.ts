@@ -14,15 +14,6 @@ import {
 } from "@/lib/dentexgo/conversations";
 import { describeDentexgoError } from "@/lib/dentexgo/errors";
 
-/**
- * Hours to silence the bot when staff take a conversation over. Matches the
- * "take over" example in the API contract.
- *
- * NOT exported: a "use server" module may only export async functions. The
- * value reaches the UI via takeOverAction's `pausedHours`.
- */
-const TAKE_OVER_HOURS = 12;
-
 /** Upstream caps message text at 2000 characters. */
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -31,7 +22,7 @@ export type QueueResult =
   | { ok: false; error: string; code?: string };
 
 export type ConversationActionResult =
-  | { ok: true; conversation: DentexgoConversation; pausedHours?: number }
+  | { ok: true; conversation: DentexgoConversation }
   | { ok: false; error: string };
 
 /**
@@ -65,9 +56,8 @@ export async function fetchNeedsHumanAction(): Promise<QueueResult> {
 }
 
 /**
- * Shared by takeOverAction and handBackAction: validates the id, sends the
- * PATCH, and classifies any failure. `logTag` keeps server logs attributable
- * to the action that triggered them even though the wrapper is shared.
+ * Validates the id, sends the PATCH, and classifies any failure. `logTag` keeps
+ * server logs attributable to the caller.
  */
 async function runPatch(
   id: string,
@@ -82,21 +72,6 @@ async function runPatch(
     console.error(logTag, e);
     return { ok: false, error: describeDentexgoError(e).message };
   }
-}
-
-/** Staff will reply themselves — keep the bot quiet for TAKE_OVER_HOURS. */
-export async function takeOverAction(
-  id: string,
-): Promise<ConversationActionResult> {
-  const authErr = await assertAdmin();
-  if (authErr) return { ok: false, error: authErr };
-  const res = await runPatch(
-    id,
-    { pause_bot_hours: TAKE_OVER_HOURS },
-    "[takeOverAction]",
-  );
-  if (!res.ok) return res;
-  return { ...res, pausedHours: TAKE_OVER_HOURS };
 }
 
 /** Hand the thread back to the bot, clearing BOTH guards in one PATCH as the
