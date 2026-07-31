@@ -45,7 +45,7 @@ export function FaqGapClusters({ clusters }: { clusters: FaqGapCluster[] }) {
 
   if (clusters.length === 0) {
     return (
-      <p className="text-[13px] text-[#9ca3af]">
+      <p className="text-[13px] text-[#6b7280]">
         Хариулагдаагүй давтагдсан асуулт олдсонгүй. Бот бүх асуултад хариулж
         байна.
       </p>
@@ -73,7 +73,7 @@ export function FaqGapClusters({ clusters }: { clusters: FaqGapCluster[] }) {
                   <span className="shrink-0 rounded-full bg-[#f3f4f6] px-2 py-0.5 text-[10px] font-bold text-[#6b7280]">
                     {c.count} хүн асуусан
                   </span>
-                  <span className="shrink-0 text-[10px] text-[#9ca3af]">
+                  <span className="shrink-0 text-[10px] text-[#6b7280]">
                     {LOCALE_LABELS_MN[c.locale] ?? c.locale}
                   </span>
                 </div>
@@ -88,7 +88,7 @@ export function FaqGapClusters({ clusters }: { clusters: FaqGapCluster[] }) {
                 type="button"
                 onClick={() => void handleDraft(c)}
                 disabled={busy}
-                className="shrink-0 inline-flex items-center rounded-full bg-[#0f172a] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-9 shrink-0 cursor-pointer items-center rounded-full bg-[#0f172a] px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
               >
                 {busy ? "Бэлтгэж байна…" : "FAQ болгох"}
               </button>

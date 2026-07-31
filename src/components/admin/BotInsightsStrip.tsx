@@ -37,7 +37,7 @@ export function BotInsightsStrip({
         <h2 className="font-display text-[15px] font-extrabold text-[#0f172a]">
           Ботын тойм
         </h2>
-        <p className="mt-2 text-[11px] text-[#9ca3af]">{error.message}</p>
+        <p className="mt-2 text-[11px] text-[#6b7280]">{error.message}</p>
       </section>
     );
   }
@@ -53,7 +53,7 @@ export function BotInsightsStrip({
         <h2 className="font-display text-[15px] font-extrabold text-[#0f172a]">
           Ботын тойм
         </h2>
-        <span className="text-[10px] text-[#9ca3af]">
+        <span className="text-[10px] text-[#6b7280]">
           Сүүлийн {insights.days} хоног
         </span>
       </div>
@@ -67,7 +67,7 @@ export function BotInsightsStrip({
           <p className="mt-1 font-display text-[22px] font-extrabold leading-none text-[#0f172a]">
             {ratePct}%
           </p>
-          <p className="mt-1 text-[10px] text-[#9ca3af]">
+          <p className="mt-1 text-[10px] text-[#6b7280]">
             {insights.needsHumanRate.needsHuman} / {insights.needsHumanRate.total} яриа
           </p>
         </div>
@@ -78,7 +78,7 @@ export function BotInsightsStrip({
             Хамгийн их асуусан
           </p>
           {topIntents.length === 0 ? (
-            <p className="mt-1 text-[11px] text-[#9ca3af]">Мэдээлэл байхгүй</p>
+            <p className="mt-1 text-[11px] text-[#6b7280]">Мэдээлэл байхгүй</p>
           ) : (
             <ul className="mt-1.5 space-y-1">
               {topIntents.map((i) => (
@@ -100,7 +100,7 @@ export function BotInsightsStrip({
         <div>
           <p className="text-[11px] font-medium text-[#6b7280]">Хэл</p>
           {insights.languages.length === 0 ? (
-            <p className="mt-1 text-[11px] text-[#9ca3af]">Мэдээлэл байхгүй</p>
+            <p className="mt-1 text-[11px] text-[#6b7280]">Мэдээлэл байхгүй</p>
           ) : (
             <ul className="mt-1.5 space-y-1">
               {insights.languages.map((l) => (
@@ -130,7 +130,7 @@ export function BotInsightsStrip({
             </p>
             <Link
               href="/admin/bot/faq-gaps"
-              className="text-[10px] font-bold text-[#0c7b6e] hover:underline"
+              className="rounded text-[10px] font-bold text-[#0c7b6e] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
             >
               Бүгдийг харах →
             </Link>

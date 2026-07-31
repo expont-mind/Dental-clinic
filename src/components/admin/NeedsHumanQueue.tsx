@@ -158,7 +158,7 @@ export function NeedsHumanQueue({
         </div>
         <div className="flex items-center gap-3">
           {lastSync && (
-            <span className="text-[10px] text-[#9ca3af]">
+            <span className="text-[10px] text-[#6b7280]">
               {timeLabel(lastSync)}-д шинэчилсэн
             </span>
           )}
@@ -166,21 +166,32 @@ export function NeedsHumanQueue({
             type="button"
             onClick={() => void refresh()}
             disabled={refreshing}
-            className="text-[11px] font-bold text-[#0c7b6e] hover:underline disabled:opacity-50"
+            className="cursor-pointer rounded text-[11px] font-bold text-[#0c7b6e] hover:underline disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
           >
             {refreshing ? "Шинэчилж байна…" : "Шинэчлэх"}
           </button>
         </div>
       </div>
 
+      {/* The list refreshes itself every 30s. Without a live region a screen
+          reader user gets no signal that a patient just joined the queue. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {rows.length === 0
+          ? "Хүлээгдэж байгаа яриа байхгүй."
+          : `${rows.length} яриа хүн шаардаж байна.`}
+      </p>
+
       {error && (
-        <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-[11px] text-danger">
+        <p
+          role="alert"
+          className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-[11px] text-danger"
+        >
           {error}
         </p>
       )}
 
       {rows.length === 0 && !error && (
-        <p className="mt-4 text-[12px] text-[#9ca3af]">
+        <p className="mt-4 text-[12px] text-[#6b7280]">
           Хүлээгдэж байгаа яриа байхгүй.
         </p>
       )}
@@ -212,7 +223,7 @@ export function NeedsHumanQueue({
                     {waitingLabel(c.needs_human_at, now)}
                   </p>
                   {!c.patient_name && (
-                    <p className="mt-1 text-[10px] text-[#9ca3af]">
+                    <p className="mt-1 text-[10px] text-[#6b7280]">
                       Нэр байхгүй — inbox дотор хамгийн сүүлийн зурвасын цагаар
                       таарууна.
                     </p>
@@ -227,7 +238,7 @@ export function NeedsHumanQueue({
                         onClick={() =>
                           void copyToClipboard(c.patient_name!, "Нэр")
                         }
-                        className="text-[10px] text-[#9ca3af] hover:text-[#6b7280] hover:underline"
+                        className="-my-1 cursor-pointer rounded py-1 text-[10px] text-[#6b7280] hover:text-[#0f172a] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
                       >
                         Нэр хуулах
                       </button>
@@ -235,7 +246,7 @@ export function NeedsHumanQueue({
                     <button
                       type="button"
                       onClick={() => void copyToClipboard(c.psid, "PSID")}
-                      className="text-[10px] text-[#9ca3af] hover:text-[#6b7280] hover:underline"
+                      className="-my-1 cursor-pointer rounded py-1 text-[10px] text-[#6b7280] hover:text-[#0f172a] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
                     >
                       PSID хуулах
                     </button>
@@ -252,7 +263,7 @@ export function NeedsHumanQueue({
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Meta Business Suite-ийн inbox нээгдэнэ. Ярианыг өвчтөний нэрээр хайж олно уу."
-                      className="inline-flex items-center rounded-full bg-[#0f172a] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b]"
+                      className="inline-flex min-h-9 cursor-pointer items-center rounded-full bg-[#0f172a] px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-[#1e293b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
                     >
                       Inbox нээх
                     </a>
@@ -261,7 +272,7 @@ export function NeedsHumanQueue({
                     type="button"
                     onClick={() => handleTakeOver(c.id)}
                     disabled={busy || c.bot_paused_active}
-                    className="inline-flex items-center rounded-full bg-[#f3f4f6] px-3 py-1.5 text-[11px] font-bold text-[#0f172a] transition-colors hover:bg-[#e5e7eb] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-9 cursor-pointer items-center rounded-full bg-[#f3f4f6] px-3.5 py-2 text-[11px] font-bold text-[#0f172a] transition-colors hover:bg-[#e5e7eb] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
                   >
                     Би хариулна
                   </button>
@@ -269,7 +280,7 @@ export function NeedsHumanQueue({
                     type="button"
                     onClick={() => handleHandBack(c.id)}
                     disabled={busy}
-                    className="inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-bold text-[#6b7280] transition-colors hover:bg-[#f3f4f6] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-9 cursor-pointer items-center rounded-full px-3.5 py-2 text-[11px] font-bold text-[#6b7280] transition-colors hover:bg-[#f3f4f6] hover:text-[#0f172a] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7b6e] focus-visible:ring-offset-2"
                   >
                     Бот руу буцаах
                   </button>
