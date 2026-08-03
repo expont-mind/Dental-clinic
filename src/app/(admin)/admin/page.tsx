@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { requireAdminUser } from "@/lib/auth";
 import { getAdminBookingStats } from "@/lib/queries/admin";
+import { loadBotDashboardData } from "@/lib/queries/dentexgo-dashboard";
+import { NeedsHumanQueue } from "@/components/admin/NeedsHumanQueue";
+import { BotInsightsStrip } from "@/components/admin/BotInsightsStrip";
 
 const STAT_TONES: Record<
   string,
@@ -105,6 +108,13 @@ export default async function AdminDashboardPage() {
     // dev bypass / supabase unreachable — show zeros
   }
 
+  const bot = await loadBotDashboardData();
+  // Baseline for the "waiting N minutes" labels. Read here, not in the client
+  // component's render, which react-hooks/purity forbids — the same reason
+  // src/app/(public)/[lang]/account/page.tsx carries this disable comment.
+  // eslint-disable-next-line react-hooks/purity
+  const serverNow = Date.now();
+
   const today = new Date();
   const dateLabel = today.toLocaleDateString("mn-MN", {
     year: "numeric",
@@ -159,6 +169,14 @@ export default async function AdminDashboardPage() {
           </p>
         </section>
 
+        {bot.configured && (
+          <NeedsHumanQueue
+            initialConversations={bot.queue}
+            initialError={bot.queueError?.message ?? null}
+            serverNow={serverNow}
+          />
+        )}
+
         {/* Stats */}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
@@ -198,6 +216,14 @@ export default async function AdminDashboardPage() {
             icon="M3 21V8l9-5 9 5v13M9 21V12h6v9"
           />
         </section>
+
+        {bot.configured && (
+          <BotInsightsStrip
+            insights={bot.insights}
+            error={bot.insightsError}
+            clusters={bot.clusters}
+          />
+        )}
 
         {/* Bottom quick links */}
         <section className="grid gap-3 lg:grid-cols-2">
