@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { HeaderGate } from "@/components/layout/HeaderGate";
 import { Footer } from "@/components/layout/Footer";
 import { FooterGate } from "@/components/layout/FooterGate";
+import { getClinicContact } from "@/lib/queries/clinic";
 import { Toaster } from "sonner";
 
 const manrope = Manrope({
@@ -73,6 +74,7 @@ export default async function RootLayout({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
+  const contact = await getClinicContact(lang);
 
   return (
     <html
@@ -89,7 +91,7 @@ export default async function RootLayout({
             crowding up from the bottom. */}
         <main className="flex-1 min-h-[calc(100dvh-4rem)]">{children}</main>
         <FooterGate>
-          <Footer dict={dict} />
+          <Footer dict={dict} contact={contact} />
         </FooterGate>
       </body>
     </html>

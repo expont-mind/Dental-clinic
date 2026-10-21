@@ -6,6 +6,7 @@ import {
   listBookableParentServicesPublic,
 } from "@/lib/queries/catalog";
 import { BookingStepHeader } from "@/components/booking/BookingStepHeader";
+import { getClinicContact } from "@/lib/queries/clinic";
 
 const ICON_PATHS: Record<string, string> = {
   implant: "M12 2v10M9 5h6M8 12h8l-1 8a3 3 0 0 1-3 3h-0a3 3 0 0 1-3-3l-1-8z",
@@ -35,7 +36,10 @@ export default async function BookStartPage({
   const dict = await getDictionary(lang);
   const isMn = lang === "mn";
 
-  const services = await listBookableParentServicesPublic();
+  const [services, contact] = await Promise.all([
+    listBookableParentServicesPublic(),
+    getClinicContact(lang),
+  ]);
 
   // Enrich with child count + min price
   const enriched = await Promise.all(
@@ -191,23 +195,25 @@ export default async function BookStartPage({
                 {dict.booking.book_help_body}
               </p>
             </div>
-            <a
-              href={`tel:${dict.contact.phone.replace(/\s/g, "")}`}
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary py-2 pl-5 pr-2 text-[13px] font-bold text-white hover:bg-primary-hover transition-colors"
-            >
-              {dict.contact.phone}
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </a>
+            {contact.phone && contact.phoneHref && (
+              <a
+                href={contact.phoneHref}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary py-2 pl-5 pr-2 text-[13px] font-bold text-white hover:bg-primary-hover transition-colors"
+              >
+                {contact.phone}
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </a>
+            )}
           </div>
         </div>
       </section>

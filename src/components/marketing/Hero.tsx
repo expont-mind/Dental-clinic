@@ -1,10 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { ClinicContact } from "@/lib/queries/clinic";
 
-export function Hero({ lang, dict }: { lang: string; dict: Dictionary }) {
-  const phoneHref = `tel:${dict.home.hero_phone.replace(/\s/g, "")}`;
-
+export function Hero({
+  lang,
+  dict,
+  contact,
+}: {
+  lang: string;
+  dict: Dictionary;
+  contact: ClinicContact;
+}) {
   return (
     <section className="relative isolate">
       {/* Full-bleed photo background */}
@@ -55,27 +62,29 @@ export function Hero({ lang, dict }: { lang: string; dict: Dictionary }) {
               </span>
             </Link>
 
-            <a href={phoneHref} className="inline-flex items-center gap-3 text-white">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-white shadow-[0_0_0_5px_rgba(255,255,255,0.18)]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <span className="text-left leading-tight">
-                <span className="font-script block text-[18px] text-white/85">
-                  {dict.home.hero_phone_label}:
+            {contact.phone && contact.phoneHref && (
+              <a href={contact.phoneHref} className="inline-flex items-center gap-3 text-white">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-white shadow-[0_0_0_5px_rgba(255,255,255,0.18)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </span>
-                <span className="block text-[16px] font-bold tracking-wide">
-                  {dict.home.hero_phone}
+                <span className="text-left leading-tight">
+                  <span className="font-script block text-[18px] text-white/85">
+                    {dict.home.hero_phone_label}:
+                  </span>
+                  <span className="block text-[16px] font-bold tracking-wide">
+                    {contact.phone}
+                  </span>
                 </span>
-              </span>
-            </a>
+              </a>
+            )}
           </div>
         </div>
 

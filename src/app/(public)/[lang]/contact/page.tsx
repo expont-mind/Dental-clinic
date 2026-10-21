@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "@/lib/i18n/dictionaries";
 import { FeedbackForm } from "@/components/contact/FeedbackForm";
+import { getClinicContact } from "@/lib/queries/clinic";
 
 export default async function ContactPage({
   params,
@@ -12,6 +13,7 @@ export default async function ContactPage({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
+  const contact = await getClinicContact(lang);
 
   const directionsHref =
     "https://www.openstreetmap.org/?mlat=47.921&mlon=106.919#map=17/47.921/106.919";
@@ -44,23 +46,25 @@ export default async function ContactPage({
                 {dict.contact.lede}
               </p>
               <div className="mt-6 flex flex-wrap gap-2.5 sm:mt-8 sm:gap-3">
-                <a
-                  href={`tel:${dict.contact.phone.replace(/\s/g, "")}`}
-                  className="group inline-flex items-center gap-2 rounded-full bg-primary py-1.5 pl-5 pr-1.5 text-[13px] font-semibold text-white hover:bg-primary-hover transition-colors sm:gap-3 sm:py-2 sm:pl-6 sm:pr-2 sm:text-[14px]"
-                >
-                  {dict.contact.phone}
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary sm:h-9 sm:w-9">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </a>
+                {contact.phone && contact.phoneHref && (
+                  <a
+                    href={contact.phoneHref}
+                    className="group inline-flex items-center gap-2 rounded-full bg-primary py-1.5 pl-5 pr-1.5 text-[13px] font-semibold text-white hover:bg-primary-hover transition-colors sm:gap-3 sm:py-2 sm:pl-6 sm:pr-2 sm:text-[14px]"
+                  >
+                    {contact.phone}
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary sm:h-9 sm:w-9">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </a>
+                )}
                 <Link
                   href={`/${lang}/book`}
                   className="inline-flex items-center gap-2 rounded-full bg-ink py-2.5 px-5 text-[13px] font-semibold text-white hover:bg-ink-2 transition-colors sm:py-3 sm:px-6 sm:text-[14px]"
@@ -103,35 +107,43 @@ export default async function ContactPage({
       {/* Info card row — overlaps hero */}
       <section className="relative -mt-12 px-5 sm:px-8">
         <ul className="mx-auto grid max-w-6xl items-stretch gap-0 overflow-hidden rounded-[28px] bg-surface shadow-[0_24px_60px_-30px_rgba(26,132,120,0.28)] ring-1 ring-line sm:grid-cols-2 lg:grid-cols-4">
-          <ContactCard
-            icon="M12 2c-3.5 0-6 2.5-6 6 0 5 6 13 6 13s6-8 6-13c0-3.5-2.5-6-6-6zm0 8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
-            label={dict.contact.address_label}
-            value={dict.contact.address}
-            tone="primary"
-            multiline
-          />
-          <ContactCard
-            icon="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
-            label={dict.contact.phone_label}
-            value={dict.contact.phone}
-            href={`tel:${dict.contact.phone.replace(/\s/g, "")}`}
-            tone="accent"
-          />
-          <ContactCard
-            icon="M3 7l9 6 9-6M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7M3 7l9-4 9 4"
-            label={dict.contact.email_label}
-            value={dict.contact.email}
-            href={`mailto:${dict.contact.email}`}
-            tone="primary"
-          />
-          <ContactCard
-            icon="M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
-            label={dict.contact.hours_label}
-            value={dict.contact.hours}
-            multiline
-            tone="accent"
-            isLast
-          />
+          {contact.address && (
+            <ContactCard
+              icon="M12 2c-3.5 0-6 2.5-6 6 0 5 6 13 6 13s6-8 6-13c0-3.5-2.5-6-6-6zm0 8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
+              label={dict.contact.address_label}
+              value={contact.address}
+              tone="primary"
+              multiline
+            />
+          )}
+          {contact.phone && contact.phoneHref && (
+            <ContactCard
+              icon="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"
+              label={dict.contact.phone_label}
+              value={contact.phone}
+              href={contact.phoneHref}
+              tone="accent"
+            />
+          )}
+          {contact.email && (
+            <ContactCard
+              icon="M3 7l9 6 9-6M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7M3 7l9-4 9 4"
+              label={dict.contact.email_label}
+              value={contact.email}
+              href={`mailto:${contact.email}`}
+              tone="primary"
+            />
+          )}
+          {contact.hours && (
+            <ContactCard
+              icon="M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+              label={dict.contact.hours_label}
+              value={contact.hours}
+              multiline
+              tone="accent"
+              isLast
+            />
+          )}
         </ul>
       </section>
 

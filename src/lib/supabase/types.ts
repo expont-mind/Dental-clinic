@@ -148,6 +148,10 @@ export interface ClinicProfile {
   address_mn: string | null;
   address_en: string | null;
   phone: string | null;
+  email: string | null;
+  facebook_url: string | null;
+  instagram_url: string | null;
+  youtube_url: string | null;
   insurance_mn: string | null;
   insurance_en: string | null;
   timezone: string;
