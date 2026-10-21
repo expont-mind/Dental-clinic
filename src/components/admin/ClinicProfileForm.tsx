@@ -70,12 +70,44 @@ export function ClinicProfileForm({ profile }: { profile: ClinicProfile }) {
         rows={2}
       />
 
-      <Field
-        name="phone"
-        label="Утас"
-        type="tel"
-        defaultValue={profile.phone ?? ""}
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          name="phone"
+          label="Утас"
+          type="tel"
+          defaultValue={profile.phone ?? ""}
+        />
+        <Field
+          name="email"
+          label="Имэйл"
+          type="email"
+          defaultValue={profile.email ?? ""}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field
+          name="facebook_url"
+          label="Facebook"
+          type="url"
+          placeholder="https://facebook.com/…"
+          defaultValue={profile.facebook_url ?? ""}
+        />
+        <Field
+          name="instagram_url"
+          label="Instagram"
+          type="url"
+          placeholder="https://instagram.com/…"
+          defaultValue={profile.instagram_url ?? ""}
+        />
+        <Field
+          name="youtube_url"
+          label="YouTube"
+          type="url"
+          placeholder="https://youtube.com/…"
+          defaultValue={profile.youtube_url ?? ""}
+        />
+      </div>
 
       <BilingualField
         label="Даатгал"
@@ -176,12 +208,14 @@ function Field({
   label,
   type = "text",
   required,
+  placeholder,
   defaultValue,
 }: {
   name: string;
   label: string;
   type?: string;
   required?: boolean;
+  placeholder?: string;
   defaultValue?: string;
 }) {
   return (
@@ -198,6 +232,7 @@ function Field({
         name={name}
         type={type}
         required={required}
+        placeholder={placeholder}
         defaultValue={defaultValue}
         className="w-full rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] outline-none focus:border-primary"
       />

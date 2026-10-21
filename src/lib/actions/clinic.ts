@@ -26,6 +26,8 @@ function readHours(formData: FormData): ClinicHours {
   return out;
 }
 
+const SOCIAL_KEYS = ["facebook_url", "instagram_url", "youtube_url"] as const;
+
 export async function updateClinicProfileAction(
   _prev: ClinicProfileState,
   formData: FormData,
@@ -34,6 +36,15 @@ export async function updateClinicProfileAction(
   if (authErr) return { error: authErr };
   if (!isSupabaseConfigured())
     return { error: "Supabase холбогдоогүй байна." };
+
+  // Rendered as footer hrefs, so only http(s) URLs get through.
+  const socials = {} as Record<(typeof SOCIAL_KEYS)[number], string | null>;
+  for (const key of SOCIAL_KEYS) {
+    const v = String(formData.get(key) || "").trim();
+    if (v && !/^https?:\/\/\S+$/i.test(v))
+      return { error: "Сошиал холбоос https:// -ээр эхэлсэн бүтэн URL байх ёстой." };
+    socials[key] = v || null;
+  }
 
   const supabase = createSupabaseAdmin();
   const { data: updated, error } = await supabase
@@ -45,6 +56,8 @@ export async function updateClinicProfileAction(
       address_mn: String(formData.get("address_mn") || "").trim() || null,
       address_en: String(formData.get("address_en") || "").trim() || null,
       phone: String(formData.get("phone") || "").trim() || null,
+      email: String(formData.get("email") || "").trim() || null,
+      ...socials,
       insurance_mn: String(formData.get("insurance_mn") || "").trim() || null,
       insurance_en: String(formData.get("insurance_en") || "").trim() || null,
       timezone:
@@ -62,5 +75,7 @@ export async function updateClinicProfileAction(
 
   after(() => emitSync({ kind: "clinic" }));
   revalidatePath("/admin/clinic");
+  // Footer (in the [lang] layout), hero and contact page all read these fields.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
